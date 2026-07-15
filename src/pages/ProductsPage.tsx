@@ -26,7 +26,7 @@ type StockFilter = 'all' | 'low' | 'out';
 export default function ProductsPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
@@ -107,23 +107,12 @@ export default function ProductsPage() {
   const lowCount = products.filter((p) => p.stockQuantity > 0 && (p.lowStockThreshold ?? 0) > 0 && p.stockQuantity <= (p.lowStockThreshold ?? 0)).length;
   const outCount = products.filter((p) => p.stockQuantity === 0).length;
 
-  const allCategories = ['__all__', ...categories, ...(products.some(p => !p.category) ? ['Uncategorized'] : [])];
   const subcategories = useMemo(() => {
     if (activeCategory === '__all__') return [];
     const cats = [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === activeCategory).map(p => p.subcategory ?? 'Uncategorized'))].sort();
     return cats;
   }, [products, activeCategory]);
   const allSubcategories = ['__all__', ...subcategories];
-
-  const handleCategoryChange = (cat: string) => {
-    setActiveCategory(cat);
-    setActiveSubcategory('__all__');
-    if (cat === '__all__') {
-      setSearchParams({});
-    } else {
-      setSearchParams({ category: cat });
-    }
-  };
 
   const isCategoryView = activeCategory !== '__all__';
 
