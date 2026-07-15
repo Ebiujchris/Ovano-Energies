@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage';
 import BalanceSheetPage from './pages/BalanceSheetPage';
 import CashFlowPage from './pages/CashFlowPage';
 import IncomeComparisonPage from './pages/IncomeComparisonPage';
+import CategoriesPage from './pages/CategoriesPage';
 
 const Spinner = () => (
   <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -33,23 +34,16 @@ const Denied = () => (
   </div>
 );
 
-function ProtectedRoute({
-  children,
-  permission,
-  ownerOnly,
-}: {
+function ProtectedRoute({ children, permission, ownerOnly }: {
   children: React.ReactNode;
   permission?: string;
   ownerOnly?: boolean;
 }) {
   const { isAuthenticated, loading, user } = useAuth();
-
   if (loading) return <Spinner />;
   if (!isAuthenticated) return <Navigate to="/" replace />;
-
   if (ownerOnly && !isOwner(user)) return <Denied />;
   if (permission && !can(user, permission)) return <Denied />;
-
   return <>{children}</>;
 }
 
@@ -61,14 +55,14 @@ export default function App() {
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/sales"     element={<ProtectedRoute><SalesPage /></ProtectedRoute>} />
       <Route path="/receipts"  element={<ProtectedRoute><ReceiptsPage /></ProtectedRoute>} />
-      <Route path="/expenses"  element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+      <Route path="/expenses"  element={<ProtectedRoute permission="canManageExpenses"><ExpensesPage /></ProtectedRoute>} />
+      <Route path="/credits"   element={<ProtectedRoute permission="canApproveCredits"><CreditsPage /></ProtectedRoute>} />
       <Route path="/settings"  element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
-      <Route path="/credits"  element={<ProtectedRoute permission="canApproveCredits"><CreditsPage /></ProtectedRoute>} />
-
-      <Route path="/products"  element={<ProtectedRoute permission="canAccessInventory"><ProductsPage /></ProtectedRoute>} />
-      <Route path="/restock"   element={<ProtectedRoute permission="canAccessInventory"><RestockPage /></ProtectedRoute>} />
-      <Route path="/suppliers" element={<ProtectedRoute permission="canAccessInventory"><SuppliersPage /></ProtectedRoute>} />
+      <Route path="/products"   element={<ProtectedRoute permission="canAccessInventory"><ProductsPage /></ProtectedRoute>} />
+      <Route path="/categories"  element={<ProtectedRoute permission="canAccessInventory"><CategoriesPage /></ProtectedRoute>} />
+      <Route path="/restock"    element={<ProtectedRoute permission="canAccessInventory"><RestockPage /></ProtectedRoute>} />
+      <Route path="/suppliers"  element={<ProtectedRoute permission="canAccessInventory"><SuppliersPage /></ProtectedRoute>} />
 
       <Route path="/reports"           element={<ProtectedRoute permission="canViewReports"><ReportsPage /></ProtectedRoute>} />
       <Route path="/balance-sheet"     element={<ProtectedRoute permission="canViewReports"><BalanceSheetPage /></ProtectedRoute>} />

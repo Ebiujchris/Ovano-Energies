@@ -12,6 +12,7 @@ interface ProductItem {
   sellingPrice: number;
   stockQuantity: number;
   category?: string;
+  subcategory?: string;
 }
 interface SaleItem {
   id: string;
@@ -43,8 +44,9 @@ export default function SalesPage() {
   const [cartPayment, setCartPayment] = useState('cash');
   const [submitting, setSubmitting] = useState(false);
 
-  // Two-step picker: category → product
-  const [pickerCategory, setPickerCategory] = useState('');
+  // Two-step picker: category → subcategory → product
+  const [pickerCategory, setPickerCategory] = useState('__all__');
+  const [pickerSubcategory, setPickerSubcategory] = useState('__all__');
   const [pickerProductId, setPickerProductId] = useState('');
   const [pickerQty, setPickerQty] = useState('1');
   const [pickerPrice, setPickerPrice] = useState('');
@@ -75,11 +77,26 @@ export default function SalesPage() {
     return cats;
   }, [products]);
 
-  // Products filtered by selected category
-  const categoryProducts = useMemo(() => {
-    if (!pickerCategory) return products;
-    return products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory);
+  const allCategories = ['__all__', ...categories];
+
+  const subcategories = useMemo(() => {
+    if (pickerCategory === '__all__') return [];
+    const cats = [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).map(p => p.subcategory ?? 'Uncategorized'))].sort();
+    return cats;
   }, [products, pickerCategory]);
+  const allSubcategories = ['__all__', ...subcategories];
+
+  // Products filtered by selected category and subcategory
+  const categoryProducts = useMemo(() => {
+    let filtered = products;
+    if (pickerCategory !== '__all__') {
+      filtered = filtered.filter(p => (p.category ?? 'Uncategorized') === pickerCategory);
+    }
+    if (pickerSubcategory !== '__all__') {
+      filtered = filtered.filter(p => (p.subcategory ?? 'Uncategorized') === pickerSubcategory);
+    }
+    return filtered;
+  }, [products, pickerCategory, pickerSubcategory]);
 
   const handlePickerProduct = (id: string) => {
     setPickerProductId(id);
@@ -89,6 +106,13 @@ export default function SalesPage() {
 
   const handleCategoryChange = (cat: string) => {
     setPickerCategory(cat);
+    setPickerSubcategory('__all__');
+    setPickerProductId('');
+    setPickerPrice('');
+  };
+
+  const handleSubcategoryChange = (subcat: string) => {
+    setPickerSubcategory(subcat);
     setPickerProductId('');
     setPickerPrice('');
   };
@@ -193,33 +217,43 @@ export default function SalesPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-center">
 
         {/* ── Cart builder ── */}
-        <div className="space-y-4 w-full lg:w-[400px] lg:shrink-0">
+        <div className="space-y-4 w-full lg:w-[480px] lg:shrink-0">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
             <h2 className="text-lg font-semibold text-slate-900">Add item to cart</h2>
             <div className="mt-4 space-y-3">
 
-              {/* Step 1: Category picker (only shown when multiple categories exist) */}
-              {categories.length > 1 && (
+              {/* Step 1: Category picker */}
+              {allCategories.length > 1 && (
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Category</label>
                   <div className="flex flex-wrap gap-2">
-                    <button type="button"
-                      onClick={() => handleCategoryChange('')}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${!pickerCategory ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
-                      All
-                    </button>
-                    {categories.map((cat) => (
+                    {allCategories.map((cat) => (
                       <button key={cat} type="button"
                         onClick={() => handleCategoryChange(cat)}
                         className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerCategory === cat ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
-                        {cat}
+                        {cat === '__all__' ? `All (${products.length})` : `${cat} (${products.filter(p => (p.category ?? 'Uncategorized') === cat).length})`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Step 2: Subcategory picker (shown when category is selected) */}
+              {pickerCategory !== '__all__' && allSubcategories.length > 1 && (
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block">Subcategory</label>
+                  <div className="flex flex-wrap gap-2">
+                    {allSubcategories.map((subcat) => (
+                      <button key={subcat} type="button"
+                        onClick={() => handleSubcategoryChange(subcat)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerSubcategory === subcat ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
+                        {subcat === '__all__' ? `All (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).length})` : `${subcat} (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory && (p.subcategory ?? 'Uncategorized') === subcat).length})`}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Step 2: Product select (filtered by category) */}
+              {/* Step 3: Product select (filtered by category and subcategory) */}
               <div>
                 <label className="text-xs text-slate-500 mb-1 block">Product</label>
                 <select

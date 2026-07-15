@@ -13,16 +13,19 @@ interface StaffMember {
   canAccessInventory: boolean;
   canApproveCredits: boolean;
   canViewReports: boolean;
+  canViewDashboard: boolean;
+  canMakeSales: boolean;
+  canManageExpenses: boolean;
   hireDate?: string;
 }
 
 const ROLES = ['cashier', 'manager', 'stock_keeper'];
 
 // Permission presets per role
-const ROLE_PRESETS: Record<string, { canAccessInventory: boolean; canApproveCredits: boolean; canViewReports: boolean }> = {
-  cashier:      { canAccessInventory: false, canApproveCredits: false, canViewReports: false },
-  stock_keeper: { canAccessInventory: true,  canApproveCredits: false, canViewReports: false },
-  manager:      { canAccessInventory: true,  canApproveCredits: true,  canViewReports: true  },
+const ROLE_PRESETS: Record<string, { canAccessInventory: boolean; canApproveCredits: boolean; canViewReports: boolean; canManageExpenses: boolean }> = {
+  cashier:      { canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false },
+  stock_keeper: { canAccessInventory: true,  canApproveCredits: false, canViewReports: false, canManageExpenses: false },
+  manager:      { canAccessInventory: true,  canApproveCredits: true,  canViewReports: true,  canManageExpenses: true  },
 };
 
 const roleBadge: Record<string, string> = {
@@ -40,7 +43,7 @@ const statusBadge: Record<string, string> = {
 
 const BLANK_FORM = {
   name: '', phone: '', role: 'cashier', salary: '', password: '',
-  canAccessInventory: false, canApproveCredits: false, canViewReports: false,
+  canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false,
 };
 
 export default function StaffPage() {
@@ -99,6 +102,7 @@ export default function StaffPage() {
           canAccessInventory: form.canAccessInventory,
           canApproveCredits: form.canApproveCredits,
           canViewReports: form.canViewReports,
+          canManageExpenses: form.canManageExpenses,
         }),
       });
       const payload = await res.json().catch(() => ({}));
@@ -124,6 +128,7 @@ export default function StaffPage() {
       if (editForm.canAccessInventory !== undefined) body.canAccessInventory = editForm.canAccessInventory;
       if (editForm.canApproveCredits !== undefined) body.canApproveCredits = editForm.canApproveCredits;
       if (editForm.canViewReports !== undefined) body.canViewReports = editForm.canViewReports;
+      if (editForm.canManageExpenses !== undefined) body.canManageExpenses = editForm.canManageExpenses;
       if (editForm.password) body.password = editForm.password;
 
       const res = await fetch(`${API_URL}/staff/${id}`, {
@@ -158,6 +163,7 @@ export default function StaffPage() {
       canAccessInventory: member.canAccessInventory,
       canApproveCredits: member.canApproveCredits,
       canViewReports: member.canViewReports,
+      canManageExpenses: member.canManageExpenses,
       password: '',
     });
     setError(null); setMessage(null);
@@ -220,9 +226,10 @@ export default function StaffPage() {
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Permissions</p>
                 <p className="text-xs text-slate-400">Auto-set by role — adjust as needed</p>
                 {([
-                  { key: 'canAccessInventory', label: 'Access inventory & restock' },
-                  { key: 'canApproveCredits',  label: 'Approve / manage credits' },
-                  { key: 'canViewReports',     label: 'View reports & financials' },
+                  { key: 'canAccessInventory',  label: 'Access inventory & restock' },
+                  { key: 'canApproveCredits',   label: 'Approve / manage credits' },
+                  { key: 'canManageExpenses',   label: 'Manage expenses' },
+                  { key: 'canViewReports',      label: 'View reports & financials' },
                 ] as const).map(({ key, label }) => (
                   <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                     <input type="checkbox" checked={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} className="rounded" />
@@ -305,6 +312,7 @@ export default function StaffPage() {
                         {([
                           { key: 'canAccessInventory' as const, label: 'Access inventory & restock' },
                           { key: 'canApproveCredits'  as const, label: 'Approve / manage credits' },
+                          { key: 'canManageExpenses'  as const, label: 'Manage expenses' },
                           { key: 'canViewReports'     as const, label: 'View reports & financials' },
                         ]).map(({ key, label }) => (
                           <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
@@ -342,9 +350,12 @@ export default function StaffPage() {
                         </div>
                         <p className="mt-0.5 text-xs text-slate-500">{member.phone}</p>
                         <div className="mt-1 flex flex-wrap gap-2">
+                          {member.canViewDashboard   && <span className="text-xs text-slate-400">📊 Dashboard</span>}
+                          {member.canMakeSales       && <span className="text-xs text-slate-400">💰 Sales</span>}
                           {member.canAccessInventory && <span className="text-xs text-slate-400">📦 Inventory</span>}
                           {member.canApproveCredits  && <span className="text-xs text-slate-400">✅ Credits</span>}
-                          {member.canViewReports     && <span className="text-xs text-slate-400">📊 Reports</span>}
+                          {member.canManageExpenses  && <span className="text-xs text-slate-400">💸 Expenses</span>}
+                          {member.canViewReports     && <span className="text-xs text-slate-400">� Reports</span>}
                         </div>
                       </div>
                       <div className="shrink-0 text-right space-y-1">

@@ -38,37 +38,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       const token = localStorage.getItem(TOKEN_KEY);
       const storedUser = localStorage.getItem(USER_KEY);
-      const version = ++sessionVersionRef.current;
 
-      if (!token) {
+      if (!token || !storedUser) {
         setLoading(false);
         return;
       }
 
-      api.setToken(token);
-
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch {
-          localStorage.removeItem(USER_KEY);
-        }
+      // Restore immediately from localStorage for fast load
+      try {
+        const parsed = JSON.parse(storedUser);
+        api.setToken(token);
+        setUser(parsed);
+      } catch {
+        localStorage.removeItem(USER_KEY);
+        setLoading(false);
+        return;
       }
 
+      setLoading(false);
+
+      // Silently refresh in background to pick up any permission changes
       try {
-        const currentUser = await api.getCurrentUser();
-        if (version !== sessionVersionRef.current) return;
-        setUser(currentUser);
-        localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-      } catch {
-        if (version !== sessionVersionRef.current) return;
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        api.setToken(null);
-        setUser(null);
-      } finally {
-        if (version === sessionVersionRef.current) {
-          setLoading(false);
+        const fresh = await api.getCurrentUser();
+        setUser(fresh);
+        localStorage.setItem(USER_KEY, JSON.stringify(fresh));
+      } catch (err: any) {
+        // Only clear session on explicit 401
+        if (err?.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          api.setToken(null);
+          setUser(null);
         }
       }
     };
