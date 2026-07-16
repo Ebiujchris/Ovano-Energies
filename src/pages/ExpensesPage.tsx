@@ -5,7 +5,7 @@ import { SkeletonList } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useFetch } from '../hooks/useFetch';
 import { API_URL, authHeader, bustCache } from '../lib/api';
-import ConfirmDialog from '../components/ConfirmDialog';
+
 
 interface Expense {
   id: string;
@@ -59,7 +59,6 @@ export default function ExpensesPage() {
 
   // Form state
   const [submitting, setSubmitting] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [search,     setSearch]     = useState('');
   const [catFilter,  setCatFilter]  = useState('all');
   const [form, setForm] = useState({
