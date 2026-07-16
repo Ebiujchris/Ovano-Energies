@@ -9,7 +9,7 @@ interface LoginFormProps {
 
 type Step = 'login' | 'forgot' | 'reset';
 
-export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
+export default function LoginForm({ onSuccess }: LoginFormProps) {
   const { login } = useAuth();
   const [step, setStep] = useState<Step>('login');
 

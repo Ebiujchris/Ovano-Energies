@@ -13,7 +13,7 @@ interface ShopInfo {
 }
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const toast = useToast();
   const owner = isOwner(user);
 
