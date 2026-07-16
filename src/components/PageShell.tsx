@@ -68,6 +68,7 @@ export default function PageShell({ title, description, children }: PageShellPro
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
 
   const financialPaths = ['/balance-sheet', '/cash-flow', '/income-comparison'];
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -130,6 +131,16 @@ export default function PageShell({ title, description, children }: PageShellPro
           </NavLink>
         );
       })}
+
+      {/* Dynamic Categories accordion */}
+      {userCan(user, 'canAccessInventory') && (() => {
+        const isOpen = !!expandedGroups['Categories'];
+        const activeCat = new URLSearchParams(location.search).get('category');
+        const onCategoryPage = location.pathname === '/products' && !!activeCat;
+
+        // We'll read categories from a ref that gets populated — simple inline fetch approach
+        return null; // handled below via CategoriesNav component
+      })()}
     </>
   );
 

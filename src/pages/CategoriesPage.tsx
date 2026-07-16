@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +41,7 @@ function getCategoryIcon(name: string): string {
 export default function CategoriesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
 
   const { data: products = [], loading, error } = useFetch<Product[]>(
     () => fetch(`${API_URL}/products`, { headers: authHeader() }).then(r => {
@@ -71,8 +72,29 @@ export default function CategoriesPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [products]);
 
-  return (
+  const filtered = useMemo(() =>
+    search.trim()
+      ? categoryGroups.filter(g => g.name.toLowerCase().includes(search.toLowerCase()))
+      : categoryGroups,
+    [categoryGroups, search],
+  );  return (
     <PageShell title="Categories" description="Browse products by category.">
+      {/* Search filter */}
+      {!loading && !error && categoryGroups.length > 0 && (
+        <div className="mb-5 flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Filter categories..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-60 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
+          />
+          <span className="text-sm text-slate-400">
+            {filtered.length} of {categoryGroups.length} categories
+          </span>
+        </div>
+      )}
+
       {loading ? (
         <SkeletonList rows={6} />
       ) : error ? (
@@ -83,9 +105,13 @@ export default function CategoriesPage() {
           <p className="font-medium">No categories yet</p>
           <p className="text-sm mt-1">Add products with a category from the Inventory page.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-500">
+          No categories match "{search}"
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {categoryGroups.map(({ name, items, totalStock, outCount, lowCount }) => (
+          {filtered.map(({ name, items, totalStock, outCount, lowCount }) => (
             <button
               key={name}
               type="button"

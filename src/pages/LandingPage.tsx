@@ -1,14 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
-import RegisterForm from '../components/RegisterForm';
-
-type Mode = 'login' | 'register';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>('login');
-
   const handleSuccess = () => navigate('/dashboard');
 
   return (
@@ -26,30 +20,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Card */}
+        {/* Card — login only */}
         <div className="rounded-3xl bg-white p-8 shadow-2xl">
-          {/* Tab switcher */}
-          <div className="flex rounded-xl bg-slate-100 p-1 mb-6">
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('register')}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Register
-            </button>
-          </div>
-
-          {mode === 'login'
-            ? <LoginForm onSuccess={handleSuccess} onSwitchToRegister={() => setMode('register')} />
-            : <RegisterForm onSuccess={handleSuccess} onSwitchToLogin={() => setMode('login')} />
-          }
+          <h2 className="text-lg font-semibold text-slate-900 mb-6 text-center">Sign in to your account</h2>
+          <LoginForm onSuccess={handleSuccess} onSwitchToRegister={() => {}} />
         </div>
 
         <p className="mt-6 text-center text-xs text-blue-200">© {new Date().getFullYear()} Ovano Energies</p>

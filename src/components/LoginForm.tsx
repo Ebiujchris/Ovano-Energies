@@ -213,12 +213,6 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
         {loading ? 'Signing in…' : 'Sign In'}
       </button>
 
-      <p className="text-center text-sm text-slate-500">
-        Don&apos;t have an account?{' '}
-        <button type="button" onClick={onSwitchToRegister} className="font-semibold text-brand-600 hover:text-brand-500">
-          Create one
-        </button>
-      </p>
     </form>
   );
 }

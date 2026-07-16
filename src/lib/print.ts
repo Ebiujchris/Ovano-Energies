@@ -3,7 +3,7 @@
  * opens it in a new tab and triggers print.
  * No popup permission needed — uses blob: URLs instead of window.open().
  */
-export function printHtml(html: string, title = 'Ovano Energies') {
+export function printHtml(html: string, title = 'Ovano Energies', extraStyles = '') {
   const doc = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,6 +37,7 @@ export function printHtml(html: string, title = 'Ovano Energies') {
       @page { margin: 18mm; }
     }
   </style>
+  <style>${extraStyles}</style>
 </head>
 <body>
   <div class="no-print">

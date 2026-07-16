@@ -148,7 +148,7 @@ export default function ExpensesPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-center">
 
         {/* ── Left: form + summary ────────────────────────────────────────── */}
-        <div className="w-full lg:w-[400px] lg:shrink-0 space-y-4">
+        <div className="w-full lg:w-[500px] lg:shrink-0 space-y-4">
 
           {/* Record form */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
