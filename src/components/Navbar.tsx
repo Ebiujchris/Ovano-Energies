@@ -9,8 +9,8 @@ export default function Navbar({ onSignIn }: NavbarProps) {
     <header className="fixed top-0 inset-x-0 z-50 border-b border-white/10 bg-slate-850/80 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-xs font-bold text-white shadow-lg shadow-brand-500/30">
-            OE
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden">
+            <img src="/images/Ovano logo.jpeg" alt="Ovano Energies" className="h-full w-full object-contain" />
           </div>
           <span className="font-display text-xl font-semibold tracking-tight text-white">
             Ovano Energies

@@ -5,6 +5,7 @@ import { SkeletonList } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useFetch } from '../hooks/useFetch';
 import { API_URL, authHeader, bustCache } from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface Product {
   id: string;
@@ -31,6 +32,7 @@ export default function RestockPage() {
   const [newSellPrice, setNewSellPrice] = useState('');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editForm, setEditForm]         = useState({ name: '', buyingPrice: '', sellingPrice: '', lowStockThreshold: '' });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: products = [], loading, error, reload } = useFetch<Product[]>(
     () => fetch(`${API_URL}/products`, { headers: authHeader() }).then(r => {
@@ -114,14 +116,37 @@ export default function RestockPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-    await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', headers: authHeader() });
-    toast.success('Product deleted');
-    bustCache('/products'); reload();
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`${API_URL}/products/${deleteTarget.id}`, { method: 'DELETE', headers: authHeader() });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `Delete failed (${res.status})`);
+      }
+      toast.success('Product deleted');
+      setDeleteTarget(null);
+      bustCache('/products'); reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+      setDeleteTarget(null);
+    }
   };
 
   return (
     <PageShell title="Stock Management" description="Restock products, update prices, and manage your inventory.">
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete product"
+        message={`Delete "${deleteTarget?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Category tabs */}
       {allCategories.length > 1 && (

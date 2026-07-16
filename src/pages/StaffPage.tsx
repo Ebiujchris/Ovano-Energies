@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import PageShell from '../components/PageShell';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface StaffMember {
   id: string;
@@ -58,6 +59,7 @@ export default function StaffPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<StaffMember & { password?: string }>>({});
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const authHeader = { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` };
@@ -149,8 +151,13 @@ export default function StaffPage() {
   };
 
   const handleRemove = async (id: string) => {
-    if (!confirm('Remove this staff member?')) return;
-    await fetch(`${API_URL}/staff/${id}`, { method: 'DELETE', headers: authHeader });
+    setDeleteTarget(id);
+  };
+
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
+    await fetch(`${API_URL}/staff/${deleteTarget}`, { method: 'DELETE', headers: authHeader });
+    setDeleteTarget(null);
     await load();
   };
 
@@ -177,6 +184,15 @@ export default function StaffPage() {
 
   return (
     <PageShell title="Staff" description="Manage your team, roles, login access, and permissions.">
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove staff member"
+        message="Are you sure you want to remove this staff member? They will lose access immediately."
+        confirmLabel="Remove"
+        danger
+        onConfirm={confirmRemove}
+        onCancel={() => setDeleteTarget(null)}
+      />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-center">
 
         {/* Add staff form */}

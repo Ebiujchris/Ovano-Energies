@@ -140,7 +140,9 @@ export default function PageShell({ title, description, children }: PageShellPro
       <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-3 sm:px-6">
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-[10px] font-bold text-white shadow shadow-brand-500/30">OE</div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shadow shadow-brand-500/30">
+              <img src="/images/Ovano logo.jpeg" alt="Ovano Energies" className="h-full w-full object-contain" />
+            </div>
             <div className="hidden sm:block">
               <p className="text-base font-semibold text-slate-900 leading-tight">Ovano Energies</p>
               <p className="text-[10px] text-slate-500 leading-tight">Management workspace</p>

@@ -54,8 +54,8 @@ export default function AuthModal({
         </button>
 
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500 text-xl font-bold text-white">
-            E
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-xl overflow-hidden">
+            <img src="/images/Ovano logo.jpeg" alt="Ovano Energies" className="h-full w-full object-contain" />
           </div>
           <h2 className="font-display text-2xl font-semibold text-slate-900">
             {mode === 'login' ? 'Welcome back' : 'Create your account'}

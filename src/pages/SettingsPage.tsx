@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { API_URL, authHeader } from '../lib/api';
 import { isOwner } from '../lib/permissions';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface ShopInfo {
   id: string;
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [clearingData, setClearingData] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     if (!user?.shopId) return;
@@ -76,14 +78,14 @@ export default function SettingsPage() {
   };
 
   const handleClearSales = async () => {
-    if (!confirm('This will permanently delete ALL sales records for this shop. This cannot be undone. Are you sure?')) return;
-    if (!confirm('Second confirmation — delete all sales? This is irreversible.')) return;
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearSales = async () => {
+    setShowClearConfirm(false);
     setClearingData(true);
     try {
-      const res = await fetch(`${API_URL}/sales/all`, {
-        method: 'DELETE',
-        headers: authHeader(),
-      });
+      const res = await fetch(`${API_URL}/sales/all`, { method: 'DELETE', headers: authHeader() });
       if (!res.ok) throw new Error('Failed to clear sales');
       const data = await res.json();
       toast.success(`Cleared ${data.deleted} sales records`);
@@ -93,6 +95,15 @@ export default function SettingsPage() {
 
   return (
     <PageShell title="Settings" description="Manage your profile, shop details and account security.">
+      <ConfirmDialog
+        open={showClearConfirm}
+        title="Clear all sales records"
+        message="This will permanently delete ALL sales transactions for this shop. This cannot be undone."
+        confirmLabel="Yes, clear all"
+        danger
+        onConfirm={confirmClearSales}
+        onCancel={() => setShowClearConfirm(false)}
+      />
       <div className="max-w-2xl space-y-6">
 
         {/* Profile */}

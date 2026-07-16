@@ -49,9 +49,25 @@ function groupIntoReceipts(sales: SaleItem[]): ReceiptGroup[] {
   return groups;
 }
 
-function printReceipt(group: ReceiptGroup) {
+async function printReceipt(group: ReceiptGroup) {
   const receiptNo = group.key.slice(0, 8).toUpperCase();
   const dateStr = new Date(group.date).toLocaleString('en-UG', { dateStyle: 'medium', timeStyle: 'short' });
+
+  // Embed logo as base64 so it works in blob: URLs
+  let logoHtml = `<div class="logo-box">OE</div>`;
+  try {
+    const resp = await fetch('/images/Ovano logo.jpeg');
+    if (resp.ok) {
+      const blob = await resp.blob();
+      const b64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      logoHtml = `<img src="${b64}" alt="Ovano Energies" class="logo-img" />`;
+    }
+  } catch { /* fallback to text */ }
+
 
   const rows = group.items.map((item) => `
     <tr>
@@ -65,7 +81,7 @@ function printReceipt(group: ReceiptGroup) {
     <div class="receipt-wrap">
       <!-- Header -->
       <div class="receipt-header">
-        <div class="logo-box">OE</div>
+        ${logoHtml}
         <div>
           <div class="company">Ovano Energies</div>
           <div class="tagline">Energy & Electronics Retail</div>
@@ -132,6 +148,7 @@ function printReceipt(group: ReceiptGroup) {
     .receipt-wrap { max-width: 480px; margin: 0 auto; font-family: 'Segoe UI', Arial, sans-serif; }
     .receipt-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
     .logo-box { width: 48px; height: 48px; background: #2563eb; color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; }
+    .logo-img { width: 48px; height: 48px; border-radius: 12px; object-fit: contain; flex-shrink: 0; }
     .company { font-size: 20px; font-weight: 800; color: #0f172a; }
     .tagline { font-size: 11px; color: #64748b; margin-top: 2px; }
     .divider-thick { border: none; border-top: 3px solid #0f172a; margin: 0 0 18px; }
