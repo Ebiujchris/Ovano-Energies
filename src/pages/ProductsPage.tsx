@@ -16,6 +16,7 @@ interface ProductItem {
   lowStockThreshold?: number;
   category?: string;
   subcategory?: string;
+  brand?: string;
 }
 
 const fmt = (n: number) =>
@@ -34,7 +35,7 @@ export default function ProductsPage() {
   const [activeSubcategory, setActiveSubcategory] = useState<string>('__all__');
   const [form, setForm] = useState({
     name: '', buyingPrice: '', sellingPrice: '',
-    stockQuantity: '', lowStockThreshold: '', category: '', subcategory: '',
+    stockQuantity: '', lowStockThreshold: '', category: '', subcategory: '', brand: '',
   });
 
   // Sync category from URL parameter
@@ -75,6 +76,7 @@ export default function ProductsPage() {
           lowStockThreshold: Number(form.lowStockThreshold || 0),
           category: form.category.trim() || null,
           subcategory: form.subcategory.trim() || null,
+          brand: form.brand.trim() || null,
           userId: user?.id,
         }),
       });
@@ -82,7 +84,7 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error(Array.isArray(payload.message) ? payload.message[0] : payload.message || 'Failed');
       toast.success(`Added ${payload.name}`);
       bustCache('/products');
-      setForm({ name: '', buyingPrice: '', sellingPrice: '', stockQuantity: '', lowStockThreshold: '', category: '', subcategory: '' });
+      setForm({ name: '', buyingPrice: '', sellingPrice: '', stockQuantity: '', lowStockThreshold: '', category: '', subcategory: '', brand: '' });
       reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to add product');
@@ -171,6 +173,7 @@ export default function ProductsPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="truncate font-medium text-slate-900">{p.name}</p>
                               {p.subcategory && <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600">{p.subcategory}</span>}
+                              {p.brand && <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-600">{p.brand}</span>}
                               {isOut && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Out</span>}
                               {isLow && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600">Low</span>}
                             </div>
@@ -212,6 +215,15 @@ export default function ProductsPage() {
                     value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} />
                   <datalist id="subcat-list">
                     {[...new Set(products.filter(p => p.category === form.category).map(p => p.subcategory).filter(Boolean))].map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block">Brand</label>
+                  <input list="brand-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    placeholder="e.g. Luminous, Felicity, Jinko…"
+                    value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
+                  <datalist id="brand-list">
+                    {[...new Set(products.map(p => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
                   </datalist>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
