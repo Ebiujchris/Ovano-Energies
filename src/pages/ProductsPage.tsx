@@ -114,6 +114,15 @@ export default function ProductsPage() {
   }, [products, activeCategory]);
   const allSubcategories = ['__all__', ...subcategories];
 
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [search, stockFilter, activeCategory, activeSubcategory]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const isCategoryView = activeCategory !== '__all__';
 
   return (
@@ -249,31 +258,69 @@ export default function ProductsPage() {
                     {products.length === 0 ? 'No products yet. Add your first item.' : 'No products match your filters.'}
                   </div>
                 ) : (
-                  <div className="max-h-[480px] overflow-y-auto space-y-2 pr-1">
-                    {filtered.map((p) => {
-                      const threshold = p.lowStockThreshold ?? 0;
-                      const isOut = p.stockQuantity === 0;
-                      const isLow = !isOut && threshold > 0 && p.stockQuantity <= threshold;
-                      return (
-                        <div key={p.id} className={`rounded-xl border p-3 ${isOut ? 'border-red-200 bg-red-50' : isLow ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="truncate font-medium text-slate-900">{p.name}</p>
-                                {p.category && <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600">{p.category}</span>}
-                                {isOut && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Out</span>}
-                                {isLow && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600">Low</span>}
+                  <div className="space-y-2">
+                    <div className="space-y-2">
+                      {paginated.map((p) => {
+                        const threshold = p.lowStockThreshold ?? 0;
+                        const isOut = p.stockQuantity === 0;
+                        const isLow = !isOut && threshold > 0 && p.stockQuantity <= threshold;
+                        return (
+                          <div key={p.id} className={`rounded-xl border p-3 ${isOut ? 'border-red-200 bg-red-50' : isLow ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="truncate font-medium text-slate-900">{p.name}</p>
+                                  {p.category && <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600">{p.category}</span>}
+                                  {isOut && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Out</span>}
+                                  {isLow && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600">Low</span>}
+                                </div>
+                                <p className="mt-0.5 text-xs text-slate-500">Buy {fmt(p.buyingPrice)} · Sell {fmt(p.sellingPrice)}</p>
                               </div>
-                              <p className="mt-0.5 text-xs text-slate-500">Buy {fmt(p.buyingPrice)} · Sell {fmt(p.sellingPrice)}</p>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <p className={`font-semibold ${isOut ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900'}`}>{p.stockQuantity} units</p>
-                              {threshold > 0 && <p className="text-xs text-slate-400">min {threshold}</p>}
+                              <div className="shrink-0 text-right">
+                                <p className={`font-semibold ${isOut ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900'}`}>{p.stockQuantity} units</p>
+                                {threshold > 0 && <p className="text-xs text-slate-400">min {threshold}</p>}
+                              </div>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                        <p className="text-xs text-slate-400">
+                          {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                            ←
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                            .reduce<(number | '...')[]>((acc, n, i, arr) => {
+                              if (i > 0 && n - (arr[i - 1] as number) > 1) acc.push('...');
+                              acc.push(n);
+                              return acc;
+                            }, [])
+                            .map((n, i) =>
+                              n === '...' ? (
+                                <span key={`ellipsis-${i}`} className="px-1 text-xs text-slate-400">…</span>
+                              ) : (
+                                <button key={n} type="button" onClick={() => setPage(n as number)}
+                                  className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${page === n ? 'bg-brand-500 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                                  {n}
+                                </button>
+                              )
+                            )}
+                          <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                            →
+                          </button>
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
                   </div>
                 )}
             </div>
