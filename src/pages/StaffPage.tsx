@@ -23,10 +23,10 @@ interface StaffMember {
 const ROLES = ['cashier', 'manager', 'stock_keeper'];
 
 // Permission presets per role
-const ROLE_PRESETS: Record<string, { canAccessInventory: boolean; canApproveCredits: boolean; canViewReports: boolean; canManageExpenses: boolean }> = {
-  cashier:      { canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false },
-  stock_keeper: { canAccessInventory: true,  canApproveCredits: false, canViewReports: false, canManageExpenses: false },
-  manager:      { canAccessInventory: true,  canApproveCredits: true,  canViewReports: true,  canManageExpenses: true  },
+const ROLE_PRESETS: Record<string, { canAccessInventory: boolean; canApproveCredits: boolean; canViewReports: boolean; canManageExpenses: boolean; canViewDashboard: boolean }> = {
+  cashier:      { canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false, canViewDashboard: true  },
+  stock_keeper: { canAccessInventory: true,  canApproveCredits: false, canViewReports: false, canManageExpenses: false, canViewDashboard: true  },
+  manager:      { canAccessInventory: true,  canApproveCredits: true,  canViewReports: true,  canManageExpenses: true,  canViewDashboard: true  },
 };
 
 const roleBadge: Record<string, string> = {
@@ -44,7 +44,7 @@ const statusBadge: Record<string, string> = {
 
 const BLANK_FORM = {
   name: '', phone: '', role: 'cashier', salary: '', password: '',
-  canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false,
+  canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false, canViewDashboard: true,
 };
 
 export default function StaffPage() {
@@ -242,6 +242,7 @@ export default function StaffPage() {
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Permissions</p>
                 <p className="text-xs text-slate-400">Auto-set by role — adjust as needed</p>
                 {([
+                  { key: 'canViewDashboard',    label: 'Overview (dashboard)' },
                   { key: 'canAccessInventory',  label: 'Access inventory & restock' },
                   { key: 'canApproveCredits',   label: 'Approve / manage credits' },
                   { key: 'canManageExpenses',   label: 'Manage expenses' },
@@ -326,6 +327,7 @@ export default function StaffPage() {
                       <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
                         <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Permissions</p>
                         {([
+                          { key: 'canViewDashboard'    as const, label: 'Overview (dashboard)' },
                           { key: 'canAccessInventory' as const, label: 'Access inventory & restock' },
                           { key: 'canApproveCredits'  as const, label: 'Approve / manage credits' },
                           { key: 'canManageExpenses'  as const, label: 'Manage expenses' },
