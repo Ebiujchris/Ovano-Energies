@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PageShell from '../components/PageShell';
 import { API_URL, authHeader } from '../lib/api';
+import { can, isOwner } from '../lib/permissions';
 
 const fc = (n: number | null | undefined) => {
   const v = Number.isFinite(Number(n)) ? Number(n) : 0;
@@ -86,6 +87,8 @@ export default function DashboardPage() {
     return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   }, []);
 
+  const canSeeOverview = isOwner(user) || can(user, 'canViewDashboard');
+
   return (
     <PageShell title="Dashboard" description="Today's performance at a glance.">
       <div className="space-y-6">
@@ -98,16 +101,18 @@ export default function DashboardPage() {
               <h2 className="mt-1 text-2xl sm:text-3xl font-bold">{user?.name ?? 'Merchant'}</h2>
               <p className="mt-2 text-sm text-slate-300">Here's how your shop is doing today.</p>
             </div>
-            <div className="flex gap-3 flex-wrap">
-              <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur min-w-[110px]">
-                <p className="text-xs text-brand-200 uppercase tracking-wide">Transactions</p>
-                <p className="mt-1 text-2xl font-bold">{today?.transactions ?? 0}</p>
+            {canSeeOverview && (
+              <div className="flex gap-3 flex-wrap">
+                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur min-w-[110px]">
+                  <p className="text-xs text-brand-200 uppercase tracking-wide">Transactions</p>
+                  <p className="mt-1 text-2xl font-bold">{today?.transactions ?? 0}</p>
+                </div>
+                <div className={`rounded-2xl border px-4 py-3 backdrop-blur min-w-[110px] ${netToday >= 0 ? 'border-emerald-400/30 bg-emerald-500/20' : 'border-red-400/30 bg-red-500/20'}`}>
+                  <p className="text-xs text-slate-300 uppercase tracking-wide">Net today</p>
+                  <p className={`mt-1 text-xl font-bold ${netToday >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{fc(netToday)}</p>
+                </div>
               </div>
-              <div className={`rounded-2xl border px-4 py-3 backdrop-blur min-w-[110px] ${netToday >= 0 ? 'border-emerald-400/30 bg-emerald-500/20' : 'border-red-400/30 bg-red-500/20'}`}>
-                <p className="text-xs text-slate-300 uppercase tracking-wide">Net today</p>
-                <p className={`mt-1 text-xl font-bold ${netToday >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{fc(netToday)}</p>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -141,63 +146,81 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">Loading dashboard…</div>
         ) : (
           <>
-            {/* Today KPIs */}
-            <section className="grid gap-4 grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs text-slate-500 uppercase tracking-wide">Revenue today</p>
-                <p className="mt-1 text-xl font-bold text-slate-900">{fc(today?.revenue)}</p>
-              </div>
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-                <p className="text-xs text-emerald-700 uppercase tracking-wide">Gross profit</p>
-                <p className="mt-1 text-xl font-bold text-emerald-900">{fc(today?.profit)}</p>
-              </div>
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
-                <p className="text-xs text-red-600 uppercase tracking-wide">Expenses today</p>
-                <p className="mt-1 text-xl font-bold text-red-700">{fc(today?.expenses)}</p>
-              </div>
-              <div className={`rounded-2xl border p-4 shadow-sm ${netToday >= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
-                <p className={`text-xs uppercase tracking-wide ${netToday >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>Net profit</p>
-                <p className={`mt-1 text-xl font-bold ${netToday >= 0 ? 'text-emerald-900' : 'text-red-700'}`}>{fc(netToday)}</p>
-              </div>
-            </section>
+            {/* Financial Overview — only visible if canViewDashboard */}
+            {canSeeOverview ? (
+              <>
+                {/* Today KPIs */}
+                <section className="grid gap-4 grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs text-slate-500 uppercase tracking-wide">Revenue today</p>
+                    <p className="mt-1 text-xl font-bold text-slate-900">{fc(today?.revenue)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                    <p className="text-xs text-emerald-700 uppercase tracking-wide">Gross profit</p>
+                    <p className="mt-1 text-xl font-bold text-emerald-900">{fc(today?.profit)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                    <p className="text-xs text-red-600 uppercase tracking-wide">Expenses today</p>
+                    <p className="mt-1 text-xl font-bold text-red-700">{fc(today?.expenses)}</p>
+                  </div>
+                  <div className={`rounded-2xl border p-4 shadow-sm ${netToday >= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+                    <p className={`text-xs uppercase tracking-wide ${netToday >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>Net profit</p>
+                    <p className={`mt-1 text-xl font-bold ${netToday >= 0 ? 'text-emerald-900' : 'text-red-700'}`}>{fc(netToday)}</p>
+                  </div>
+                </section>
 
-            {/* Cash flow today */}
-            <section className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-xs text-emerald-700">Cash in</p>
-                <p className="mt-1 text-lg font-bold text-emerald-900">{fc(today?.cashSales)}</p>
+                {/* Cash flow today */}
+                <section className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="text-xs text-emerald-700">Cash in</p>
+                    <p className="mt-1 text-lg font-bold text-emerald-900">{fc(today?.cashSales)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-xs text-amber-700">Credit sales</p>
+                    <p className="mt-1 text-lg font-bold text-amber-900">{fc(today?.creditSales)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                    <p className="text-xs text-red-600">Money out (expenses)</p>
+                    <p className="mt-1 text-lg font-bold text-red-800">{fc(today?.expenses)}</p>
+                  </div>
+                </section>
+              </>
+            ) : (
+              /* Locked state — no overview permission */
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200">
+                  <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-slate-700">Financial overview not available</p>
+                <p className="mt-1 text-xs text-slate-400">You don't have permission to view revenue and profit stats. Contact your shop owner.</p>
               </div>
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs text-amber-700">Credit sales</p>
-                <p className="mt-1 text-lg font-bold text-amber-900">{fc(today?.creditSales)}</p>
-              </div>
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-xs text-red-600">Money out (expenses)</p>
-                <p className="mt-1 text-lg font-bold text-red-800">{fc(today?.expenses)}</p>
-              </div>
-            </section>
+            )}
 
             {/* Performance + quick links */}
             <section className="grid gap-6 lg:grid-cols-2">
-              {/* Period performance */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 mb-3">Performance</p>
-                <div className="space-y-2">
-                  {[
-                    { label: 'This week revenue', value: fc(weekRev) },
-                    { label: 'This month revenue', value: fc(monthRev) },
-                    { label: 'Outstanding credits', value: fc(outstanding) },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
-                      <span className="text-sm text-slate-500">{label}</span>
-                      <span className="text-sm font-semibold text-slate-900">{value}</span>
-                    </div>
-                  ))}
+              {/* Period performance — only show if can see overview */}
+              {canSeeOverview && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 mb-3">Performance</p>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'This week revenue', value: fc(weekRev) },
+                      { label: 'This month revenue', value: fc(monthRev) },
+                      { label: 'Outstanding credits', value: fc(outstanding) },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
+                        <span className="text-sm text-slate-500">{label}</span>
+                        <span className="text-sm font-semibold text-slate-900">{value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Quick links */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className={`rounded-2xl border border-slate-200 bg-white p-5 ${!canSeeOverview ? 'lg:col-span-2' : ''}`}>
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 mb-3">Quick actions</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
