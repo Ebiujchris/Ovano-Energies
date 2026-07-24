@@ -43,7 +43,10 @@ export default function RestockPage() {
   );
 
   const { data: categories = [] } = useFetch<string[]>(
-    () => fetch(`${API_URL}/products/categories`, { headers: authHeader() }).then(r => r.json()),
+    () => fetch(`${API_URL}/products/categories`, { headers: authHeader() }).then((r) => {
+      if (!r.ok) throw new Error('Failed to load categories');
+      return r.json();
+    }),
     [user?.id],
   );
 
@@ -61,7 +64,7 @@ export default function RestockPage() {
   const lowCount = products.filter(p => p.stockQuantity > 0 && (p.lowStockThreshold ?? 0) > 0 && p.stockQuantity <= (p.lowStockThreshold ?? 0)).length;
   const outCount = products.filter(p => p.stockQuantity === 0).length;
 
-  const allCategories = ['__all__', ...categories, ...(products.some(p => !p.category) ? ['Uncategorized'] : [])];
+  const allCategories = ['__all__', ...(Array.isArray(categories) ? categories : []), ...(products.some(p => !p.category) ? ['Uncategorized'] : [])];
 
   const handleRestock = async (id: string) => {
     const qty = Number(restockQty);

@@ -35,7 +35,7 @@ export default function ProductsPage() {
   const [activeSubcategory, setActiveSubcategory] = useState<string>('__all__');
   const [form, setForm] = useState({
     name: '', buyingPrice: '', sellingPrice: '',
-    stockQuantity: '', lowStockThreshold: '', category: '', subcategory: '', brand: '',
+    stockQuantity: '', lowStockThreshold: '', category: '', brand: '',
   });
 
   // Sync category from URL parameter
@@ -57,7 +57,10 @@ export default function ProductsPage() {
   );
 
   const { data: categories = [] } = useFetch<string[]>(
-    () => fetch(`${API_URL}/products/categories`, { headers: authHeader() }).then((r) => r.json()),
+    () => fetch(`${API_URL}/products/categories`, { headers: authHeader() }).then((r) => {
+      if (!r.ok) throw new Error('Failed to load categories');
+      return r.json();
+    }),
     [user?.id],
   );
 
@@ -75,7 +78,6 @@ export default function ProductsPage() {
           stockQuantity: Number(form.stockQuantity),
           lowStockThreshold: Number(form.lowStockThreshold || 0),
           category: form.category.trim() || null,
-          subcategory: form.subcategory.trim() || null,
           brand: form.brand.trim() || null,
           userId: user?.id,
         }),
@@ -84,7 +86,7 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error(Array.isArray(payload.message) ? payload.message[0] : payload.message || 'Failed');
       toast.success(`Added ${payload.name}`);
       bustCache('/products');
-      setForm({ name: '', buyingPrice: '', sellingPrice: '', stockQuantity: '', lowStockThreshold: '', category: '', subcategory: '', brand: '' });
+      setForm({ name: '', buyingPrice: '', sellingPrice: '', stockQuantity: '', lowStockThreshold: '', category: '', brand: '' });
       reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to add product');
@@ -198,25 +200,6 @@ export default function ProductsPage() {
             <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <h2 className="text-lg font-semibold text-slate-900">Add product</h2>
               <div className="mt-4 space-y-3">
-                <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Product name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-                <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Category</label>
-                  <input list="cat-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    placeholder="e.g. Solar Equipment, Lighting…"
-                    value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                  <datalist id="cat-list">
-                    {categories.map((c) => <option key={c} value={c} />)}
-                  </datalist>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Subcategory</label>
-                  <input list="subcat-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    placeholder="e.g. Panels, Inverters, LED Bulbs…"
-                    value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} />
-                  <datalist id="subcat-list">
-                    {[...new Set(products.filter(p => p.category === form.category).map(p => p.subcategory).filter(Boolean))].map((s) => <option key={s} value={s} />)}
-                  </datalist>
-                </div>
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Brand</label>
                   <input list="brand-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
@@ -226,6 +209,16 @@ export default function ProductsPage() {
                     {[...new Set(products.map(p => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
                   </datalist>
                 </div>
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block">Category</label>
+                  <input list="cat-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    placeholder="e.g. Solar Equipment, Lighting…"
+                    value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                  <datalist id="cat-list">
+                    {(Array.isArray(categories) ? categories : []).map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+                <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Product name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Buying price" type="number" value={form.buyingPrice} onChange={(e) => setForm({ ...form, buyingPrice: e.target.value })} required />
                   <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Selling price" type="number" value={form.sellingPrice} onChange={(e) => setForm({ ...form, sellingPrice: e.target.value })} required />
