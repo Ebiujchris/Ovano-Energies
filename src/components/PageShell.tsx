@@ -39,6 +39,7 @@ const ALL_NAV: NavEntry[] = [
     items: [
       { label: 'Products',   path: '/products' },
       { label: 'Categories', path: '/categories' },
+      { label: 'Brands',     path: '/brands' },
       { label: 'Restock',    path: '/restock' },
       { label: 'Suppliers',  path: '/suppliers' },
     ],

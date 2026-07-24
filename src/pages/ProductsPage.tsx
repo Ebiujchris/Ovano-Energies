@@ -39,14 +39,12 @@ export default function ProductsPage() {
     stockQuantity: '', lowStockThreshold: '', category: '', brand: '',
   });
 
-  // Sync category from URL parameter
+  // Sync category and brand from URL parameters
   useEffect(() => {
     const categoryParam = searchParams.get('category');
-    if (categoryParam) {
-      setActiveCategory(categoryParam);
-    } else {
-      setActiveCategory('__all__');
-    }
+    const brandParam = searchParams.get('brand');
+    setActiveCategory(categoryParam ?? '__all__');
+    setActiveBrand(brandParam ?? '__all__');
   }, [searchParams]);
 
   const { data: products = [], loading, error, reload } = useFetch<ProductItem[]>(
@@ -134,11 +132,18 @@ export default function ProductsPage() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const isCategoryView = activeCategory !== '__all__';
+  const isBrandView = activeBrand !== '__all__';
+  const viewTitle = isCategoryView ? activeCategory : isBrandView ? activeBrand : 'Products';
+  const viewDesc = isCategoryView
+    ? `${filtered.length} items in this category`
+    : isBrandView
+    ? `${filtered.length} items by ${activeBrand}`
+    : 'Add inventory and track stock for your shop.';
 
   return (
     <PageShell
-      title={isCategoryView ? activeCategory : 'Products'}
-      description={isCategoryView ? `${filtered.length} items in this category` : 'Add inventory and track stock for your shop.'}
+      title={viewTitle}
+      description={viewDesc}
     >
       <div className="max-w-4xl mx-auto">
 

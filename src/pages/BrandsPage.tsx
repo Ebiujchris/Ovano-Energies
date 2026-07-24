@@ -1,0 +1,141 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import PageShell from '../components/PageShell';
+import { useAuth } from '../context/AuthContext';
+import { SkeletonList } from '../components/Skeleton';
+import { useFetch } from '../hooks/useFetch';
+import { API_URL, authHeader } from '../lib/api';
+
+interface Product {
+  id: string;
+  name: string;
+  brand?: string;
+  category?: string;
+  stockQuantity: number;
+  lowStockThreshold?: number;
+}
+
+export default function BrandsPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+
+  const { data: products = [], loading, error } = useFetch<Product[]>(
+    () => fetch(`${API_URL}/products`, { headers: authHeader() }).then(r => {
+      if (!r.ok) throw new Error('Failed to load products');
+      return r.json();
+    }),
+    [user?.id],
+  );
+
+  const brandGroups = useMemo(() => {
+    const map = new Map<string, Product[]>();
+    for (const p of products) {
+      const brand = p.brand?.trim() || 'Unbranded';
+      if (!map.has(brand)) map.set(brand, []);
+      map.get(brand)!.push(p);
+    }
+    return [...map.entries()]
+      .map(([name, items]) => {
+        const totalStock = items.reduce((s, p) => s + Number(p.stockQuantity), 0);
+        const outCount = items.filter(p => Number(p.stockQuantity) === 0).length;
+        const lowCount = items.filter(p => {
+          const qty = Number(p.stockQuantity);
+          const thresh = Number(p.lowStockThreshold ?? 0);
+          return qty > 0 && thresh > 0 && qty <= thresh;
+        }).length;
+        const categories = [...new Set(items.map(p => p.category).filter(Boolean))];
+        return { name, items, totalStock, outCount, lowCount, categories };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  const filtered = useMemo(() =>
+    search.trim()
+      ? brandGroups.filter(g => g.name.toLowerCase().includes(search.toLowerCase()))
+      : brandGroups,
+    [brandGroups, search],
+  );
+
+  return (
+    <PageShell title="Brands" description="Browse your inventory by brand.">
+      {!loading && !error && brandGroups.length > 0 && (
+        <div className="mb-5 flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Filter brands..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-60 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
+          />
+          <span className="text-sm text-slate-400">
+            {filtered.length} of {brandGroups.length} brands
+          </span>
+        </div>
+      )}
+
+      {loading ? (
+        <SkeletonList rows={6} />
+      ) : error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">{error}</div>
+      ) : brandGroups.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center text-slate-500">
+          <p className="text-3xl mb-3">🏷️</p>
+          <p className="font-medium">No brands yet</p>
+          <p className="text-sm mt-1">Add products with a brand from the Inventory page.</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-500">
+          No brands match "{search}"
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map(({ name, items, totalStock, outCount, lowCount, categories }) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => navigate(`/products?brand=${encodeURIComponent(name)}`)}
+              className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-2xl group-hover:bg-blue-100 transition">
+                  🏷️
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900 truncate">{name}</p>
+                  <p className="text-xs text-slate-500">{items.length} product{items.length !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+
+              {categories.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-1">
+                  {categories.slice(0, 3).map(c => (
+                    <span key={c} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{c}</span>
+                  ))}
+                  {categories.length > 3 && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-400">+{categories.length - 3}</span>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">{totalStock} units total</span>
+                <div className="flex gap-1.5">
+                  {outCount > 0 && (
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-600 font-medium">{outCount} out</span>
+                  )}
+                  {lowCount > 0 && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-600 font-medium">{lowCount} low</span>
+                  )}
+                  {outCount === 0 && lowCount === 0 && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-600 font-medium">In stock</span>
+                  )}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </PageShell>
+  );
+}

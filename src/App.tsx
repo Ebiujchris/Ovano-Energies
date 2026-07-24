@@ -17,6 +17,7 @@ import BalanceSheetPage from './pages/BalanceSheetPage';
 import CashFlowPage from './pages/CashFlowPage';
 import IncomeComparisonPage from './pages/IncomeComparisonPage';
 import CategoriesPage from './pages/CategoriesPage';
+import BrandsPage from './pages/BrandsPage';
 
 const Spinner = () => (
   <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -61,6 +62,7 @@ export default function App() {
 
       <Route path="/products"   element={<ProtectedRoute permission="canAccessInventory"><ProductsPage /></ProtectedRoute>} />
       <Route path="/categories"  element={<ProtectedRoute permission="canAccessInventory"><CategoriesPage /></ProtectedRoute>} />
+      <Route path="/brands"      element={<ProtectedRoute permission="canAccessInventory"><BrandsPage /></ProtectedRoute>} />
       <Route path="/restock"    element={<ProtectedRoute permission="canAccessInventory"><RestockPage /></ProtectedRoute>} />
       <Route path="/suppliers"  element={<ProtectedRoute permission="canAccessInventory"><SuppliersPage /></ProtectedRoute>} />
 
