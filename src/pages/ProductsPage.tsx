@@ -33,6 +33,7 @@ export default function ProductsPage() {
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('__all__');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('__all__');
+  const [activeBrand, setActiveBrand] = useState<string>('__all__');
   const [form, setForm] = useState({
     name: '', buyingPrice: '', sellingPrice: '',
     stockQuantity: '', lowStockThreshold: '', category: '', brand: '',
@@ -105,8 +106,9 @@ export default function ProductsPage() {
       (stockFilter === 'low' && p.stockQuantity > 0 && threshold > 0 && p.stockQuantity <= threshold);
     const matchCat = activeCategory === '__all__' || (p.category ?? 'Uncategorized') === activeCategory;
     const matchSubcat = activeSubcategory === '__all__' || (p.subcategory ?? 'Uncategorized') === activeSubcategory;
-    return matchSearch && matchStock && matchCat && matchSubcat;
-  }), [products, search, stockFilter, activeCategory, activeSubcategory]);
+    const matchBrand = activeBrand === '__all__' || (p.brand ?? '') === activeBrand;
+    return matchSearch && matchStock && matchCat && matchSubcat && matchBrand;
+  }), [products, search, stockFilter, activeCategory, activeSubcategory, activeBrand]);
 
   const lowCount = products.filter((p) => p.stockQuantity > 0 && (p.lowStockThreshold ?? 0) > 0 && p.stockQuantity <= (p.lowStockThreshold ?? 0)).length;
   const outCount = products.filter((p) => p.stockQuantity === 0).length;
@@ -118,11 +120,15 @@ export default function ProductsPage() {
   }, [products, activeCategory]);
   const allSubcategories = ['__all__', ...subcategories];
 
+  const brands = useMemo(() =>
+    [...new Set(products.map(p => p.brand).filter(Boolean) as string[])].sort()
+  , [products]);
+
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [search, stockFilter, activeCategory, activeSubcategory]);
+  useEffect(() => { setPage(1); }, [search, stockFilter, activeCategory, activeSubcategory, activeBrand]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -251,6 +257,20 @@ export default function ProductsPage() {
                     </button>
                   ))}
                 </div>
+                {brands.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => setActiveBrand('__all__')}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${activeBrand === '__all__' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                      All brands
+                    </button>
+                    {brands.map((b) => (
+                      <button key={b} type="button" onClick={() => setActiveBrand(b)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${activeBrand === b ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}>
+                        {b} ({products.filter(p => p.brand === b).length})
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {loading ? <SkeletonList rows={5} />
                 : error ? (
@@ -276,6 +296,7 @@ export default function ProductsPage() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <p className="truncate font-medium text-slate-900">{p.name}</p>
                                   {p.category && <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600">{p.category}</span>}
+                                  {p.brand && <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-600">{p.brand}</span>}
                                   {isOut && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Out</span>}
                                   {isLow && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600">Low</span>}
                                 </div>
