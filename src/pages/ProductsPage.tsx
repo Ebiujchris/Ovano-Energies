@@ -67,13 +67,6 @@ export default function ProductsPage() {
     [user?.id],
   );
 
-  const { data: categories = [] } = useFetch<string[]>(
-    () => fetch(`${API_URL}/products/categories`, { headers: authHeader() }).then((r) => {
-      if (!r.ok) throw new Error('Failed to load categories');
-      return r.json();
-    }),
-    [user?.id],
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
