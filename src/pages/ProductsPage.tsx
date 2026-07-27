@@ -186,7 +186,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           /* Default view — add form only */
-          <div className="max-w-md">
+          <div className="max-w-2xl">
             {/* Add form */}
             <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <h2 className="text-lg font-semibold text-slate-900">Add product</h2>

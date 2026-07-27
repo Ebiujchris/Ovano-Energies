@@ -212,7 +212,7 @@ export default function SalesPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-center">
 
         {/* ── Cart builder ── */}
-        <div className="space-y-4 w-full lg:w-[480px] lg:shrink-0">
+        <div className="space-y-4 w-full lg:w-[640px] lg:shrink-0">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
             <h2 className="text-lg font-semibold text-slate-900">Add item to cart</h2>
             <div className="mt-4 space-y-3">
