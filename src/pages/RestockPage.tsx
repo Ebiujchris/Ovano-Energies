@@ -66,6 +66,13 @@ export default function RestockPage() {
 
   const allCategories = ['__all__', ...(Array.isArray(categories) ? categories : []), ...(products.some(p => !p.category) ? ['Uncategorized'] : [])];
 
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+  // reset page on filter change
+  useMemo(() => setPage(1), [search, filter, activeCategory]); // eslint-disable-line react-hooks/exhaustive-deps
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const handleRestock = async (id: string) => {
     const qty = Number(restockQty);
     if (!qty || qty <= 0) { toast.error('Enter a valid quantity'); return; }
@@ -189,7 +196,7 @@ export default function RestockPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map((p) => {
+            {paginated.map((p) => {
               const threshold = p.lowStockThreshold ?? 0;
               const isOut = p.stockQuantity === 0;
               const isLow = !isOut && threshold > 0 && p.stockQuantity <= threshold;
@@ -310,6 +317,42 @@ export default function RestockPage() {
             })}
           </div>
         )}
+
+      {/* Pagination */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-xs text-slate-400">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} products
+          </p>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition">
+              ←
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+              .reduce<(number | '...')[]>((acc, n, i, arr) => {
+                if (i > 0 && n - (arr[i - 1] as number) > 1) acc.push('...');
+                acc.push(n);
+                return acc;
+              }, [])
+              .map((n, i) =>
+                n === '...' ? (
+                  <span key={`e-${i}`} className="px-1 text-xs text-slate-400">…</span>
+                ) : (
+                  <button key={n} type="button" onClick={() => setPage(n as number)}
+                    className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${page === n ? 'bg-brand-500 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                    {n}
+                  </button>
+                )
+              )}
+            <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition">
+              →
+            </button>
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 }
