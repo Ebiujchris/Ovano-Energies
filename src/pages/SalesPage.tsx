@@ -222,38 +222,44 @@ export default function SalesPage() {
             <h2 className="text-lg font-semibold text-slate-900">Add item to cart</h2>
             <div className="mt-4 space-y-3">
 
-              {/* Step 1: Category picker */}
-              {allCategories.length > 1 && (
-                <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Category</label>
-                  <div className="flex flex-wrap gap-2">
-                    {allCategories.map((cat) => (
-                      <button key={cat} type="button"
-                        onClick={() => handleCategoryChange(cat)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerCategory === cat ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
-                        {cat === '__all__' ? `All (${products.length})` : `${cat} (${products.filter(p => (p.category ?? 'Uncategorized') === cat).length})`}
-                      </button>
-                    ))}
-                  </div>
+              {/* Category picker */}
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Category</label>
+                <div className="flex flex-wrap gap-2">
+                  {allCategories.map((cat) => (
+                    <button key={cat} type="button" onClick={() => handleCategoryChange(cat)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerCategory === cat ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
+                      {cat === '__all__' ? `All (${products.length})` : `${cat} (${products.filter(p => (p.category ?? 'Uncategorized') === cat).length})`}
+                    </button>
+                  ))}
                 </div>
-              )}
-              {/* Step 2: Brand picker (shown when category is selected and has brands) */}
-              {pickerCategory !== '__all__' && allSubcategories.length > 1 && (
-                <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Brand</label>
-                  <div className="flex flex-wrap gap-2">
-                    {allSubcategories.map((brand) => (
-                      <button key={brand} type="button"
-                        onClick={() => handleBrandChange(brand)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerBrand === brand ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
-                        {brand === '__all__'
-                          ? `All (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).length})`
-                          : `${brand} (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory && p.brand === brand).length})`}
+              </div>
+
+              {/* Brand picker — shown when selected category has brands */}
+              {(() => {
+                const brandPool = pickerCategory === '__all__'
+                  ? products
+                  : products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory);
+                const brands = [...new Set(brandPool.map(p => p.brand).filter(Boolean) as string[])].sort();
+                if (brands.length === 0) return null;
+                return (
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Brand</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => handleBrandChange('__all__')}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerBrand === '__all__' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
+                        All
                       </button>
-                    ))}
+                      {brands.map(brand => (
+                        <button key={brand} type="button" onClick={() => handleBrandChange(brand)}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerBrand === brand ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
+                          {brand} ({brandPool.filter(p => p.brand === brand).length})
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Step 3: Product select (filtered by category and subcategory) */}
               <div>
