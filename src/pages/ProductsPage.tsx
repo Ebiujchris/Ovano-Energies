@@ -34,7 +34,6 @@ const PRESET_CATEGORIES = [
   'DC Water Pumps',
 ];
 
-type StockFilter = 'all' | 'low' | 'out';
 
 export default function ProductsPage() {
   const { user } = useAuth();
@@ -42,7 +41,6 @@ export default function ProductsPage() {
   const [searchParams] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
-  const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('__all__');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('__all__');
   const [activeBrand, setActiveBrand] = useState<string>('__all__');
@@ -59,7 +57,7 @@ export default function ProductsPage() {
     setActiveBrand(brandParam ?? '__all__');
   }, [searchParams]);
 
-  const { data: products = [], loading, error, reload } = useFetch<ProductItem[]>(
+  const { data: products = [], loading, reload } = useFetch<ProductItem[]>(
     () => fetch(`${API_URL}/products`, { headers: authHeader() }).then((r) => {
       if (!r.ok) throw new Error('Failed to load products');
       return r.json();
@@ -102,39 +100,17 @@ export default function ProductsPage() {
   // Derive grouped data
   const filtered = useMemo(() => products.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const threshold = p.lowStockThreshold ?? 0;
-    const matchStock =
-      stockFilter === 'all' ||
-      (stockFilter === 'out' && p.stockQuantity === 0) ||
-      (stockFilter === 'low' && p.stockQuantity > 0 && threshold > 0 && p.stockQuantity <= threshold);
     const matchCat = activeCategory === '__all__' || (p.category ?? 'Uncategorized') === activeCategory;
     const matchSubcat = activeSubcategory === '__all__' || (p.subcategory ?? 'Uncategorized') === activeSubcategory;
     const matchBrand = activeBrand === '__all__' || (p.brand ?? '') === activeBrand;
-    return matchSearch && matchStock && matchCat && matchSubcat && matchBrand;
-  }), [products, search, stockFilter, activeCategory, activeSubcategory, activeBrand]);
-
-  const lowCount = products.filter((p) => p.stockQuantity > 0 && (p.lowStockThreshold ?? 0) > 0 && p.stockQuantity <= (p.lowStockThreshold ?? 0)).length;
-  const outCount = products.filter((p) => p.stockQuantity === 0).length;
+    return matchSearch && matchCat && matchSubcat && matchBrand;
+  }), [products, search, activeCategory, activeSubcategory, activeBrand]);
 
   const subcategories = useMemo(() => {
     if (activeCategory === '__all__') return [];
-    const cats = [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === activeCategory).map(p => p.subcategory ?? 'Uncategorized'))].sort();
-    return cats;
+    return [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === activeCategory).map(p => p.subcategory ?? 'Uncategorized'))].sort();
   }, [products, activeCategory]);
   const allSubcategories = ['__all__', ...subcategories];
-
-  const brands = useMemo(() =>
-    [...new Set(products.map(p => p.brand).filter(Boolean) as string[])].sort()
-  , [products]);
-
-  const PAGE_SIZE = 10;
-  const [page, setPage] = useState(1);
-
-  // Reset page when filters change
-  useEffect(() => { setPage(1); }, [search, stockFilter, activeCategory, activeSubcategory, activeBrand]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const isCategoryView = activeCategory !== '__all__';
   const isBrandView = activeBrand !== '__all__';

@@ -79,12 +79,7 @@ export default function SalesPage() {
 
   const allCategories = ['__all__', ...categories];
 
-  const subcategories = useMemo(() => {
-    if (pickerCategory === '__all__') return [];
-    const brands = [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).map(p => p.brand).filter(Boolean) as string[])].sort();
-    return brands;
-  }, [products, pickerCategory]);
-  const allSubcategories = ['__all__', ...subcategories];
+
 
   // Products filtered by selected category and brand
   const categoryProducts = useMemo(() => {
