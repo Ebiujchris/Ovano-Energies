@@ -12,7 +12,7 @@ interface ProductItem {
   sellingPrice: number;
   stockQuantity: number;
   category?: string;
-  subcategory?: string;
+  brand?: string;
 }
 interface SaleItem {
   id: string;
@@ -44,9 +44,9 @@ export default function SalesPage() {
   const [cartPayment, setCartPayment] = useState('cash');
   const [submitting, setSubmitting] = useState(false);
 
-  // Two-step picker: category → subcategory → product
+  // Two-step picker: category → brand → product
   const [pickerCategory, setPickerCategory] = useState('__all__');
-  const [pickerSubcategory, setPickerSubcategory] = useState('__all__');
+  const [pickerBrand, setPickerBrand] = useState('__all__');
   const [pickerProductId, setPickerProductId] = useState('');
   const [pickerQty, setPickerQty] = useState('1');
   const [pickerPrice, setPickerPrice] = useState('');
@@ -81,22 +81,22 @@ export default function SalesPage() {
 
   const subcategories = useMemo(() => {
     if (pickerCategory === '__all__') return [];
-    const cats = [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).map(p => p.subcategory ?? 'Uncategorized'))].sort();
-    return cats;
+    const brands = [...new Set(products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).map(p => p.brand).filter(Boolean) as string[])].sort();
+    return brands;
   }, [products, pickerCategory]);
   const allSubcategories = ['__all__', ...subcategories];
 
-  // Products filtered by selected category and subcategory
+  // Products filtered by selected category and brand
   const categoryProducts = useMemo(() => {
     let filtered = products;
     if (pickerCategory !== '__all__') {
       filtered = filtered.filter(p => (p.category ?? 'Uncategorized') === pickerCategory);
     }
-    if (pickerSubcategory !== '__all__') {
-      filtered = filtered.filter(p => (p.subcategory ?? 'Uncategorized') === pickerSubcategory);
+    if (pickerBrand !== '__all__') {
+      filtered = filtered.filter(p => p.brand === pickerBrand);
     }
     return filtered;
-  }, [products, pickerCategory, pickerSubcategory]);
+  }, [products, pickerCategory, pickerBrand]);
 
   const handlePickerProduct = (id: string) => {
     setPickerProductId(id);
@@ -106,13 +106,13 @@ export default function SalesPage() {
 
   const handleCategoryChange = (cat: string) => {
     setPickerCategory(cat);
-    setPickerSubcategory('__all__');
+    setPickerBrand('__all__');
     setPickerProductId('');
     setPickerPrice('');
   };
 
-  const handleSubcategoryChange = (subcat: string) => {
-    setPickerSubcategory(subcat);
+  const handleBrandChange = (brand: string) => {
+    setPickerBrand(brand);
     setPickerProductId('');
     setPickerPrice('');
   };
@@ -237,16 +237,18 @@ export default function SalesPage() {
                   </div>
                 </div>
               )}
-              {/* Step 2: Subcategory picker (shown when category is selected) */}
+              {/* Step 2: Brand picker (shown when category is selected and has brands) */}
               {pickerCategory !== '__all__' && allSubcategories.length > 1 && (
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Subcategory</label>
+                  <label className="text-xs text-slate-500 mb-1 block">Brand</label>
                   <div className="flex flex-wrap gap-2">
-                    {allSubcategories.map((subcat) => (
-                      <button key={subcat} type="button"
-                        onClick={() => handleSubcategoryChange(subcat)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerSubcategory === subcat ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
-                        {subcat === '__all__' ? `All (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).length})` : `${subcat} (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory && (p.subcategory ?? 'Uncategorized') === subcat).length})`}
+                    {allSubcategories.map((brand) => (
+                      <button key={brand} type="button"
+                        onClick={() => handleBrandChange(brand)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${pickerBrand === brand ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>
+                        {brand === '__all__'
+                          ? `All (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory).length})`
+                          : `${brand} (${products.filter(p => (p.category ?? 'Uncategorized') === pickerCategory && p.brand === brand).length})`}
                       </button>
                     ))}
                   </div>
