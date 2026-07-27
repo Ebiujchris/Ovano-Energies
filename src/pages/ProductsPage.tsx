@@ -22,6 +22,18 @@ interface ProductItem {
 const fmt = (n: number) =>
   `UGX ${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
+const PRESET_BRANDS = [
+  'Deye', 'Dyness', 'Felicity Solar', 'YACHU', 'CWorth Energy', 'Sunshin',
+  'BlueCarbon', 'Vestwood', 'SolarBorn', 'Difful', 'Tai Energy', 'Sumura',
+  'AJ', 'Jinko', 'PowerEnergy', 'EcoFlow',
+];
+
+const PRESET_CATEGORIES = [
+  'Panels', 'Gel Battery', 'Lithium Battery', 'Hybrid Inverter',
+  'Power Inverter', 'Power Station', 'Solar Cameras', 'Solar Flood Lights',
+  'DC Water Pumps',
+];
+
 type StockFilter = 'all' | 'low' | 'out';
 
 export default function ProductsPage() {
@@ -213,21 +225,31 @@ export default function ProductsPage() {
               <div className="mt-4 space-y-3">
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Brand</label>
-                  <input list="brand-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    placeholder="e.g. Luminous, Felicity, Jinko…"
+                  <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    placeholder="Select or type brand…"
                     value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
-                  <datalist id="brand-list">
-                    {[...new Set(products.map(p => p.brand).filter(Boolean))].map((b) => <option key={b} value={b} />)}
-                  </datalist>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {PRESET_BRANDS.map(b => (
+                      <button key={b} type="button" onClick={() => setForm({ ...form, brand: b })}
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition border ${form.brand === b ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'}`}>
+                        {b}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Category</label>
-                  <input list="cat-list" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    placeholder="e.g. Solar Equipment, Lighting…"
+                  <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    placeholder="Select or type category…"
                     value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                  <datalist id="cat-list">
-                    {(Array.isArray(categories) ? categories : []).map((c) => <option key={c} value={c} />)}
-                  </datalist>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {PRESET_CATEGORIES.map(c => (
+                      <button key={c} type="button" onClick={() => setForm({ ...form, category: c })}
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition border ${form.category === c ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300 hover:text-brand-600'}`}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Product name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                 <div className="grid gap-3 sm:grid-cols-2">
