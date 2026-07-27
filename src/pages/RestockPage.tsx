@@ -15,6 +15,7 @@ interface Product {
   stockQuantity: number;
   lowStockThreshold?: number;
   category?: string;
+  brand?: string;
 }
 
 const fmt = (n: number) => `UGX ${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
@@ -26,6 +27,7 @@ export default function RestockPage() {
   const [search, setSearch]             = useState('');
   const [filter, setFilter]             = useState<'all' | 'low' | 'out'>('all');
   const [activeCategory, setActiveCategory] = useState<string>('__all__');
+  const [activeBrand, setActiveBrand] = useState<string>('__all__');
   const [editingId, setEditingId]       = useState<string | null>(null);
   const [restockQty, setRestockQty]     = useState('');
   const [newBuyPrice, setNewBuyPrice]   = useState('');
@@ -58,18 +60,22 @@ export default function RestockPage() {
       (filter === 'out' && p.stockQuantity === 0) ||
       (filter === 'low' && p.stockQuantity > 0 && threshold > 0 && p.stockQuantity <= threshold);
     const matchCat = activeCategory === '__all__' || (p.category ?? 'Uncategorized') === activeCategory;
-    return matchSearch && matchFilter && matchCat;
-  }), [products, search, filter, activeCategory]);
+    const matchBrand = activeBrand === '__all__' || p.brand === activeBrand;
+    return matchSearch && matchFilter && matchCat && matchBrand;
+  }), [products, search, filter, activeCategory, activeBrand]);
 
   const lowCount = products.filter(p => p.stockQuantity > 0 && (p.lowStockThreshold ?? 0) > 0 && p.stockQuantity <= (p.lowStockThreshold ?? 0)).length;
   const outCount = products.filter(p => p.stockQuantity === 0).length;
 
   const allCategories = ['__all__', ...(Array.isArray(categories) ? categories : []), ...(products.some(p => !p.category) ? ['Uncategorized'] : [])];
 
+  const brands = useMemo(() =>
+    [...new Set(products.map(p => p.brand).filter(Boolean) as string[])].sort()
+  , [products]);
+
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
-  // reset page on filter change
-  useMemo(() => setPage(1), [search, filter, activeCategory]); // eslint-disable-line react-hooks/exhaustive-deps
+  useMemo(() => setPage(1), [search, filter, activeCategory, activeBrand]); // eslint-disable-line react-hooks/exhaustive-deps
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -186,6 +192,22 @@ export default function RestockPage() {
         </div>
         <span className="ml-auto text-sm text-slate-400">{filtered.length} products</span>
       </div>
+
+      {/* Brand filter */}
+      {brands.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button type="button" onClick={() => setActiveBrand('__all__')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${activeBrand === '__all__' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            All brands
+          </button>
+          {brands.map(b => (
+            <button key={b} type="button" onClick={() => setActiveBrand(b)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${activeBrand === b ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}>
+              {b} ({products.filter(p => p.brand === b).length})
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? <SkeletonList rows={6} />
         : error ? (
