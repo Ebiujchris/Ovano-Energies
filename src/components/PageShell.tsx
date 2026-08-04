@@ -12,11 +12,13 @@ interface PageShellProps {
 interface NavItem {
   label: string;
   path: string;
+  icon: string;
   permission?: string;
 }
 
 interface NavGroup {
   group: string;
+  icon: string;
   permission?: string;
   items: NavItem[];
 }
@@ -28,34 +30,36 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 }
 
 const ALL_NAV: NavEntry[] = [
-  { label: 'Overview',  path: '/dashboard' },
-  { label: 'Sales',     path: '/sales' },
-  { label: 'Receipts',  path: '/receipts' },
-  { label: 'Credits',   path: '/credits',   permission: 'canApproveCredits' },
-  { label: 'Expenses',  path: '/expenses',  permission: 'canManageExpenses' },
+  { label: 'Overview',  path: '/dashboard', icon: '📊' },
+  { label: 'Sales',     path: '/sales',     icon: '💰' },
+  { label: 'Receipts',  path: '/receipts',  icon: '🧾' },
+  { label: 'Credits',   path: '/credits',   icon: '📋', permission: 'canApproveCredits' },
+  { label: 'Expenses',  path: '/expenses',  icon: '💸', permission: 'canManageExpenses' },
   {
     group: 'Inventory',
+    icon: '📦',
     permission: 'canAccessInventory',
     items: [
-      { label: 'Products',   path: '/products' },
-      { label: 'Categories', path: '/categories' },
-      { label: 'Brands',     path: '/brands' },
-      { label: 'Restock',    path: '/restock' },
-      { label: 'Suppliers',  path: '/suppliers' },
+      { label: 'Products',   path: '/products',   icon: '🏷️' },
+      { label: 'Categories', path: '/categories', icon: '🗂️' },
+      { label: 'Brands',     path: '/brands',     icon: '⭐' },
+      { label: 'Restock',    path: '/restock',    icon: '🔄' },
+      { label: 'Suppliers',  path: '/suppliers',  icon: '🚚' },
     ],
   },
-  { label: 'Reports', path: '/reports', permission: 'canViewReports' },
+  { label: 'Reports',  path: '/reports', icon: '📈', permission: 'canViewReports' },
   {
     group: 'Financials',
+    icon: '🏦',
     permission: 'canViewReports',
     items: [
-      { label: 'Balance Sheet', path: '/balance-sheet' },
-      { label: 'Cash Flow',     path: '/cash-flow' },
-      { label: 'Comparison',    path: '/income-comparison' },
+      { label: 'Balance Sheet', path: '/balance-sheet',     icon: '⚖️' },
+      { label: 'Cash Flow',     path: '/cash-flow',         icon: '💵' },
+      { label: 'Comparison',    path: '/income-comparison', icon: '📉' },
     ],
   },
-  { label: 'Staff',    path: '/staff',    permission: 'ownerOnly' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Staff',    path: '/staff',    icon: '👥', permission: 'ownerOnly' },
+  { label: 'Settings', path: '/settings', icon: '⚙️' },
 ];
 
 function userCan(user: any, permission?: string): boolean {
@@ -71,9 +75,10 @@ export default function PageShell({ title, description, children }: PageShellPro
   const [menuOpen, setMenuOpen] = useState(false);
 
   const financialPaths = ['/balance-sheet', '/cash-flow', '/income-comparison'];
+  const inventoryPaths = ['/products', '/categories', '/brands', '/restock', '/suppliers'];
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     Financials: financialPaths.includes(location.pathname),
-    Inventory: ['/products', '/categories', '/restock', '/suppliers'].includes(location.pathname),
+    Inventory:  inventoryPaths.includes(location.pathname),
   });
 
   const toggleGroup = (group: string) =>
@@ -98,21 +103,33 @@ export default function PageShell({ title, description, children }: PageShellPro
           const hasActive = entry.items.some(i => location.pathname === i.path);
           return (
             <div key={entry.group}>
-              <button type="button" onClick={() => toggleGroup(entry.group)}
-                className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition ${
+              <button
+                type="button"
+                onClick={() => toggleGroup(entry.group)}
+                className={`w-full flex items-center gap-2.5 justify-between rounded-xl px-3 py-2 text-sm font-medium transition ${
                   hasActive ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}>
-                <span>{entry.group}</span>
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-base leading-none">{entry.icon}</span>
+                  {entry.group}
+                </span>
                 <span className={`text-xs transition-transform duration-200 inline-block ${isOpen ? 'rotate-90' : ''}`}>›</span>
               </button>
               {isOpen && (
-                <div className="ml-3 mt-0.5 space-y-0.5 border-l border-slate-200 pl-3">
+                <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-slate-100 pl-3">
                   {entry.items.map((item) => (
-                    <NavLink key={item.path} to={item.path} onClick={onClick}
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={onClick}
                       className={({ isActive }) =>
-                        `flex items-center rounded-xl px-3 py-2 text-sm font-medium transition ${
+                        `flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
                           isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                        }`}>
+                        }`
+                      }
+                    >
+                      <span className="text-sm leading-none">{item.icon}</span>
                       {item.label}
                     </NavLink>
                   ))}
@@ -122,23 +139,30 @@ export default function PageShell({ title, description, children }: PageShellPro
           );
         }
         return (
-          <NavLink key={entry.path} to={entry.path} onClick={onClick}
+          <NavLink
+            key={entry.path}
+            to={entry.path}
+            onClick={onClick}
             className={({ isActive }) =>
-              `flex items-center rounded-xl px-3 py-2 text-sm font-medium transition ${
-                isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}>
+              `flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition ${
+                isActive
+                  ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/30'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`
+            }
+          >
+            <span className="text-base leading-none">{entry.icon}</span>
             {entry.label}
           </NavLink>
         );
       })}
-
-      {/* Categories accordion is on the Categories page itself */}
     </>
   );
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.08),_transparent_32%),linear-gradient(135deg,_#f8fafc_0%,_#eef4ff_100%)]">
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+      {/* Header */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-3 sm:px-6">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shadow shadow-brand-500/30">
@@ -151,16 +175,22 @@ export default function PageShell({ title, description, children }: PageShellPro
           </Link>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex flex-col items-end mr-1">
-              <span className="text-xs font-medium text-slate-700">{user?.name}</span>
+              <span className="text-xs font-semibold text-slate-700">{user?.name}</span>
               <span className="text-[10px] text-slate-400 capitalize">{roleLabel}</span>
             </div>
-            <button type="button" onClick={handleLogout}
-              className="hidden sm:inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-              Sign out
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              <span className="text-sm">↩</span> Sign out
             </button>
-            <button type="button" onClick={() => setMenuOpen(!menuOpen)}
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
               className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600"
-              aria-label="Toggle menu">
+              aria-label="Toggle menu"
+            >
               {menuOpen
                 ? <span className="text-lg leading-none">✕</span>
                 : <span className="flex flex-col gap-1 items-center justify-center w-5">
@@ -174,13 +204,19 @@ export default function PageShell({ title, description, children }: PageShellPro
         </div>
       </header>
 
+      {/* Mobile nav */}
       {menuOpen && (
         <div className="lg:hidden fixed inset-0 z-20 bg-slate-950/40" onClick={closeMenu}>
-          <div className="absolute top-[57px] left-0 right-0 bg-white border-b border-slate-200 shadow-xl px-4 py-4 max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}>
+          <div
+            className="absolute top-[57px] left-0 right-0 bg-white border-b border-slate-200 shadow-xl px-4 py-4 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <NavLinks onClick={closeMenu} />
-            <button type="button" onClick={handleLogout}
-              className="mt-3 w-full rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-3 w-full rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
               Sign out
             </button>
           </div>
@@ -188,20 +224,27 @@ export default function PageShell({ title, description, children }: PageShellPro
       )}
 
       <div className="flex min-h-[calc(100vh-57px)]">
-        <aside className="hidden lg:flex lg:w-52 lg:shrink-0 lg:flex-col border-r border-slate-200/80 bg-white/90 backdrop-blur p-4">
+        {/* Sidebar */}
+        <aside className="hidden lg:flex lg:w-56 lg:shrink-0 lg:flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur p-4">
           <div className="rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 p-3 text-white shadow shadow-brand-500/20">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-100">Energy hub</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-100">⚡ Energy hub</p>
             <p className="mt-0.5 text-xs font-semibold">Manage your energy business.</p>
           </div>
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <p className="text-xs font-semibold text-slate-800 truncate">{user?.name}</p>
-            <p className="text-[10px] text-slate-400 capitalize">{roleLabel}</p>
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 flex items-center gap-2">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-sm font-bold text-brand-600">
+              {user?.name?.[0]?.toUpperCase() ?? '?'}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-800 truncate">{user?.name}</p>
+              <p className="text-[10px] text-slate-400 capitalize">{roleLabel}</p>
+            </div>
           </div>
-          <nav className="mt-2 flex-1 space-y-0.5 overflow-y-auto">
+          <nav className="mt-3 flex-1 space-y-0.5 overflow-y-auto">
             <NavLinks />
           </nav>
         </aside>
 
+        {/* Main */}
         <main className="flex-1 min-w-0 bg-white/90 backdrop-blur p-4 sm:p-6">
           <div className="mb-5 border-b border-slate-200 pb-4">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-600">Ovano Energies</p>

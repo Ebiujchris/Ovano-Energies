@@ -224,16 +224,19 @@ export default function DashboardPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 mb-3">Quick actions</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'New sale',    sub: 'Record a transaction', to: '/sales' },
-                    { label: 'Credits',     sub: 'Who owes you money', to: '/credits' },
-                    { label: 'Restock',     sub: 'Add stock to products', to: '/restock' },
-                    { label: 'Reports',     sub: 'Daily & monthly view', to: '/reports' },
-                    { label: 'Expenses',    sub: 'Record a cost', to: '/expenses' },
-                    { label: 'Receipts',    sub: 'Print/share receipts', to: '/receipts' },
-                  ].map(({ label, sub, to }) => (
-                    <Link key={to} to={to} className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-brand-200 hover:bg-brand-50 transition">
-                      <p className="text-sm font-semibold text-slate-900">{label}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
+                    { label: 'New sale',    sub: 'Record a transaction', to: '/sales',    icon: '💰', bg: 'bg-emerald-50', border: 'border-emerald-100', hover: 'hover:border-emerald-300' },
+                    { label: 'Credits',     sub: 'Who owes you money',   to: '/credits',  icon: '📋', bg: 'bg-amber-50',   border: 'border-amber-100',   hover: 'hover:border-amber-300' },
+                    { label: 'Restock',     sub: 'Add stock to products', to: '/restock', icon: '🔄', bg: 'bg-blue-50',    border: 'border-blue-100',    hover: 'hover:border-blue-300' },
+                    { label: 'Reports',     sub: 'Daily & monthly view',  to: '/reports', icon: '📈', bg: 'bg-purple-50',  border: 'border-purple-100',  hover: 'hover:border-purple-300' },
+                    { label: 'Expenses',    sub: 'Record a cost',         to: '/expenses',icon: '💸', bg: 'bg-red-50',     border: 'border-red-100',     hover: 'hover:border-red-300' },
+                    { label: 'Receipts',    sub: 'Print/share receipts',  to: '/receipts',icon: '🧾', bg: 'bg-slate-50',   border: 'border-slate-200',   hover: 'hover:border-slate-300' },
+                  ].map(({ label, sub, to, icon, bg, border, hover }) => (
+                    <Link key={to} to={to} className={`group rounded-xl border ${border} ${bg} p-3.5 ${hover} transition`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{icon}</span>
+                        <p className="text-sm font-semibold text-slate-900">{label}</p>
+                      </div>
+                      <p className="text-xs text-slate-500">{sub}</p>
                     </Link>
                   ))}
                 </div>
