@@ -11,6 +11,7 @@ interface ProductItem {
   name: string;
   sellingPrice: number;
   stockQuantity: number;
+  lowStockThreshold?: number;
   category?: string;
   brand?: string;
 }
