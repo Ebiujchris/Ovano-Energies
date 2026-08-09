@@ -5,6 +5,7 @@ import { SkeletonList } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useFetch } from '../hooks/useFetch';
 import { API_URL, authHeader, bustCache } from '../lib/api';
+import { isOwner } from '../lib/permissions';
 
 interface ProductItem {
   id: string;
@@ -25,6 +26,7 @@ interface SaleItem {
   customerName?: string;
   status?: string;
   createdAt: string;
+  createdByStaffId?: string;
 }
 interface CartItem {
   key: string;
@@ -161,6 +163,7 @@ export default function SalesPage() {
               paymentType: cartPayment,
               customerName: cartCustomer.trim() || 'Walk-in customer',
               userId: user?.id,
+              createdByStaffId: user?.id,
             }),
           }).then(async (r) => {
             const payload = await r.json().catch(() => ({}));
@@ -187,11 +190,16 @@ export default function SalesPage() {
   };
 
   const filteredSales = useMemo(() => sales.filter((s) => {
+    // If not owner, only show sales created by this user
+    if (!isOwner(user)) {
+      if (s.createdByStaffId !== user?.id) return false;
+    }
+    
     const matchFilter = filter === 'all' || s.paymentType === filter;
     const q = search.toLowerCase();
     const matchSearch = !q || [s.product?.name, s.customerName, s.paymentType].some((v) => v?.toLowerCase().includes(q));
     return matchFilter && matchSearch;
-  }), [sales, filter, search]);
+  }), [sales, filter, search, user]);
 
   const handleVoid = async (id: string) => {
     if (!voidReason.trim()) { toast.error('Enter a reason for voiding'); return; }
@@ -431,6 +439,7 @@ export default function SalesPage() {
                               {isVoided && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-500">voided</span>}
                             </div>
                             <p className="mt-0.5 text-xs text-slate-500">{sale.quantity} units · {sale.customerName ?? 'Walk-in customer'}</p>
+                            {sale.createdByStaffId && <p className="text-xs text-slate-400">By staff: {sale.createdByStaffId.slice(0, 8)}</p>}
                             <p className="text-xs text-slate-400">{new Date(sale.createdAt).toLocaleString()}</p>
                           </div>
                           <div className="shrink-0 text-right">

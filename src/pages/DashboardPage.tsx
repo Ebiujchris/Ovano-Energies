@@ -44,6 +44,7 @@ export default function DashboardPage() {
     const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
 
     const enc = encodeURIComponent;
+    const isOwnerUser = isOwner(user);
 
     const load = async () => {
       setLoading(true);
@@ -52,8 +53,11 @@ export default function DashboardPage() {
           fetch(`${API_URL}/sales/range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/sales/range?startDate=${enc(weekStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/sales/range?startDate=${enc(monthStart.toISOString())}&endDate=${enc(monthEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/expenses/by-date-range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/credits/stats`, { headers: h }).then(r => r.ok ? r.json() : { totalOutstanding: 0 }),
+          // Expenses only for owner
+          isOwnerUser ? fetch(`${API_URL}/expenses/by-date-range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []) : Promise.resolve([]),
+          // Credits only for owner
+          isOwnerUser ? fetch(`${API_URL}/credits/stats`, { headers: h }).then(r => r.ok ? r.json() : { totalOutstanding: 0 }) : Promise.resolve({ totalOutstanding: 0 }),
+          // Low stock only for owner/with access
           fetch(`${API_URL}/products/low-stock`, { headers: h }).then(r => r.ok ? r.json() : []),
         ]);
 
@@ -62,19 +66,23 @@ export default function DashboardPage() {
         const sumProfit = (arr: any[]) => arr.reduce((s: number, x: any) =>
           s + (Number(x.unitPrice) - Number(x.product?.buyingPrice ?? 0)) * Number(x.quantity), 0);
 
-        const todayActive = active(sToday);
+        // If staff, filter sales to only theirs
+        const myTodaySales = isOwnerUser ? active(sToday) : active(sToday).filter((s: any) => s.createdByStaffId === user.id);
+        const myWeekSales = isOwnerUser ? active(sWeek) : active(sWeek).filter((s: any) => s.createdByStaffId === user.id);
+        const myMonthSales = isOwnerUser ? active(sMonth) : active(sMonth).filter((s: any) => s.createdByStaffId === user.id);
+
         setToday({
-          revenue:      sumAmt(todayActive),
-          profit:       sumProfit(todayActive),
-          expenses:     eToday.reduce((s: number, e: any) => s + Number(e.amount), 0),
-          transactions: todayActive.length,
-          cashSales:    todayActive.filter((s: any) => s.paymentType === 'cash').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
-          creditSales:  todayActive.filter((s: any) => s.paymentType === 'credit').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
+          revenue:      sumAmt(myTodaySales),
+          profit:       sumProfit(myTodaySales),
+          expenses:     isOwnerUser ? eToday.reduce((s: number, e: any) => s + Number(e.amount), 0) : 0,
+          transactions: myTodaySales.length,
+          cashSales:    myTodaySales.filter((s: any) => s.paymentType === 'cash').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
+          creditSales:  myTodaySales.filter((s: any) => s.paymentType === 'credit').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
         });
-        setWeekRev(sumAmt(active(sWeek)));
-        setMonthRev(sumAmt(active(sMonth)));
-        setOutstanding(Number(credStats.totalOutstanding ?? 0));
-        setLowStock(Array.isArray(lsRes) ? lsRes.slice(0, 5) : []);
+        setWeekRev(sumAmt(myWeekSales));
+        setMonthRev(sumAmt(myMonthSales));
+        setOutstanding(isOwnerUser ? Number(credStats.totalOutstanding ?? 0) : 0);
+        setLowStock(isOwnerUser && Array.isArray(lsRes) ? lsRes.slice(0, 5) : []);
       } catch {/* silent */}
       finally { setLoading(false); }
     };
@@ -186,16 +194,39 @@ export default function DashboardPage() {
                 </section>
               </>
             ) : (
-              /* Locked state — no overview permission */
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200">
-                  <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-semibold text-slate-700">Financial overview not available</p>
-                <p className="mt-1 text-xs text-slate-400">You don't have permission to view revenue and profit stats. Contact your shop owner.</p>
-              </div>
+              /* Staff personal sales view */
+              <>
+                <section className="grid gap-4 grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs text-slate-500 uppercase tracking-wide">Your sales today</p>
+                    <p className="mt-1 text-xl font-bold text-slate-900">{fc(today?.revenue)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                    <p className="text-xs text-emerald-700 uppercase tracking-wide">Your profit</p>
+                    <p className="mt-1 text-xl font-bold text-emerald-900">{fc(today?.profit)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+                    <p className="text-xs text-blue-700 uppercase tracking-wide">Transactions</p>
+                    <p className="mt-1 text-xl font-bold text-blue-900">{today?.transactions}</p>
+                  </div>
+                  <div className={`rounded-2xl border p-4 shadow-sm ${netToday >= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
+                    <p className={`text-xs uppercase tracking-wide ${netToday >= 0 ? 'text-emerald-700' : 'text-slate-600'}`}>Net from sales</p>
+                    <p className={`mt-1 text-xl font-bold ${netToday >= 0 ? 'text-emerald-900' : 'text-slate-700'}`}>{fc(today?.profit)}</p>
+                  </div>
+                </section>
+
+                {/* Staff cash flow */}
+                <section className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="text-xs text-emerald-700">Cash sales</p>
+                    <p className="mt-1 text-lg font-bold text-emerald-900">{fc(today?.cashSales)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-xs text-amber-700">Credit sales</p>
+                    <p className="mt-1 text-lg font-bold text-amber-900">{fc(today?.creditSales)}</p>
+                  </div>
+                </section>
+              </>
             )}
 
             {/* Performance + quick links */}
