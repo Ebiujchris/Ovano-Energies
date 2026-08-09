@@ -163,7 +163,8 @@ export default function SalesPage() {
               paymentType: cartPayment,
               customerName: cartCustomer.trim() || 'Walk-in customer',
               userId: user?.id,
-              createdByStaffId: user?.id,
+              // TODO: Add createdByStaffId once backend field is working
+              // createdByStaffId: user?.id,
             }),
           }).then(async (r) => {
             const payload = await r.json().catch(() => ({}));
@@ -190,10 +191,10 @@ export default function SalesPage() {
   };
 
   const filteredSales = useMemo(() => sales.filter((s) => {
-    // If not owner, only show sales created by this user
-    if (!isOwner(user)) {
-      if (s.createdByStaffId !== user?.id) return false;
-    }
+    // TODO: Re-enable staff filtering once createdByStaffId is working
+    // if (!isOwner(user)) {
+    //   if (s.createdByStaffId !== user?.id) return false;
+    // }
     
     const matchFilter = filter === 'all' || s.paymentType === filter;
     const q = search.toLowerCase();

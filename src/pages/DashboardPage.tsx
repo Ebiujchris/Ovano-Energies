@@ -53,11 +53,8 @@ export default function DashboardPage() {
           fetch(`${API_URL}/sales/range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/sales/range?startDate=${enc(weekStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/sales/range?startDate=${enc(monthStart.toISOString())}&endDate=${enc(monthEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          // Expenses only for owner
-          isOwnerUser ? fetch(`${API_URL}/expenses/by-date-range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []) : Promise.resolve([]),
-          // Credits only for owner
-          isOwnerUser ? fetch(`${API_URL}/credits/stats`, { headers: h }).then(r => r.ok ? r.json() : { totalOutstanding: 0 }) : Promise.resolve({ totalOutstanding: 0 }),
-          // Low stock only for owner/with access
+          fetch(`${API_URL}/expenses/by-date-range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/credits/stats`, { headers: h }).then(r => r.ok ? r.json() : { totalOutstanding: 0 }),
           fetch(`${API_URL}/products/low-stock`, { headers: h }).then(r => r.ok ? r.json() : []),
         ]);
 
@@ -66,23 +63,20 @@ export default function DashboardPage() {
         const sumProfit = (arr: any[]) => arr.reduce((s: number, x: any) =>
           s + (Number(x.unitPrice) - Number(x.product?.buyingPrice ?? 0)) * Number(x.quantity), 0);
 
-        // If staff, filter sales to only theirs
-        const myTodaySales = isOwnerUser ? active(sToday) : active(sToday).filter((s: any) => s.createdByStaffId === user.id);
-        const myWeekSales = isOwnerUser ? active(sWeek) : active(sWeek).filter((s: any) => s.createdByStaffId === user.id);
-        const myMonthSales = isOwnerUser ? active(sMonth) : active(sMonth).filter((s: any) => s.createdByStaffId === user.id);
-
+        // TODO: Re-enable staff filtering once createdByStaffId is working
+        const todayActive = active(sToday);
         setToday({
-          revenue:      sumAmt(myTodaySales),
-          profit:       sumProfit(myTodaySales),
-          expenses:     isOwnerUser ? eToday.reduce((s: number, e: any) => s + Number(e.amount), 0) : 0,
-          transactions: myTodaySales.length,
-          cashSales:    myTodaySales.filter((s: any) => s.paymentType === 'cash').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
-          creditSales:  myTodaySales.filter((s: any) => s.paymentType === 'credit').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
+          revenue:      sumAmt(todayActive),
+          profit:       sumProfit(todayActive),
+          expenses:     eToday.reduce((s: number, e: any) => s + Number(e.amount), 0),
+          transactions: todayActive.length,
+          cashSales:    todayActive.filter((s: any) => s.paymentType === 'cash').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
+          creditSales:  todayActive.filter((s: any) => s.paymentType === 'credit').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
         });
-        setWeekRev(sumAmt(myWeekSales));
-        setMonthRev(sumAmt(myMonthSales));
-        setOutstanding(isOwnerUser ? Number(credStats.totalOutstanding ?? 0) : 0);
-        setLowStock(isOwnerUser && Array.isArray(lsRes) ? lsRes.slice(0, 5) : []);
+        setWeekRev(sumAmt(active(sWeek)));
+        setMonthRev(sumAmt(active(sMonth)));
+        setOutstanding(Number(credStats.totalOutstanding ?? 0));
+        setLowStock(Array.isArray(lsRes) ? lsRes.slice(0, 5) : []);
       } catch {/* silent */}
       finally { setLoading(false); }
     };
