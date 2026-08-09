@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PageShell from '../components/PageShell';
 import { API_URL, authHeader } from '../lib/api';
-import { can, isOwner } from '../lib/permissions';
+import { can } from '../lib/permissions';
 
 const fc = (n: number | null | undefined) => {
   const v = Number.isFinite(Number(n)) ? Number(n) : 0;
@@ -44,7 +44,6 @@ export default function DashboardPage() {
     const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
 
     const enc = encodeURIComponent;
-    const isOwnerUser = isOwner(user);
 
     const load = async () => {
       setLoading(true);

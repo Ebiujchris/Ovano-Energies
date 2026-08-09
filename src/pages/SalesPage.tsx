@@ -5,7 +5,6 @@ import { SkeletonList } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useFetch } from '../hooks/useFetch';
 import { API_URL, authHeader, bustCache } from '../lib/api';
-import { isOwner } from '../lib/permissions';
 
 interface ProductItem {
   id: string;
