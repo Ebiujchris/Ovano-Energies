@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PageShell from '../components/PageShell';
 import { API_URL, authHeader } from '../lib/api';
-import { can } from '../lib/permissions';
+import { can, isOwner } from '../lib/permissions';
 
 const fc = (n: number | null | undefined) => {
   const v = Number.isFinite(Number(n)) ? Number(n) : 0;
