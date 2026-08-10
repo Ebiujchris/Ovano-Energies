@@ -14,6 +14,7 @@ interface SaleItem {
   totalAmount: number;
   paymentType: string;
   customerName?: string;
+  createdByStaffName?: string;
   status?: string;
   createdAt: string;
 }
@@ -21,6 +22,7 @@ interface SaleItem {
 interface ReceiptGroup {
   key: string;
   customer: string;
+  staffName?: string;
   paymentType: string;
   date: string;
   items: SaleItem[];
@@ -35,6 +37,7 @@ function groupIntoReceipts(sales: SaleItem[]): ReceiptGroup[] {
   for (const sale of sorted) {
     const saleTime = new Date(sale.createdAt).getTime();
     const customer = sale.customerName || 'Walk-in customer';
+    const staffName = sale.createdByStaffName;
     const existing = groups.find(
       (g) => g.customer === customer && g.paymentType === sale.paymentType &&
         Math.abs(new Date(g.date).getTime() - saleTime) < 5 * 60 * 1000,
@@ -43,7 +46,7 @@ function groupIntoReceipts(sales: SaleItem[]): ReceiptGroup[] {
       existing.items.push(sale);
       existing.total += Number(sale.totalAmount);
     } else {
-      groups.push({ key: sale.id, customer, paymentType: sale.paymentType, date: sale.createdAt, items: [sale], total: Number(sale.totalAmount) });
+      groups.push({ key: sale.id, customer, staffName, paymentType: sale.paymentType, date: sale.createdAt, items: [sale], total: Number(sale.totalAmount) });
     }
   }
   return groups;
@@ -108,6 +111,10 @@ async function printReceipt(group: ReceiptGroup) {
           <span class="label">Customer</span>
           <span class="value">${group.customer}</span>
         </div>
+        ${group.staffName ? `<div class="info-item">
+          <span class="label">Sale by</span>
+          <span class="value">${group.staffName}</span>
+        </div>` : ''}
         <div class="info-item">
           <span class="label">Payment</span>
           <span class="value payment-badge ${group.paymentType}">${group.paymentType.replace('_', ' ')}</span>
