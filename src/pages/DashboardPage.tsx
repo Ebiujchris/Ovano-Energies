@@ -33,50 +33,50 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     const h = authHeader();
-    const now = new Date();
-
-    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
-    const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
-
-    const weekStart  = new Date(now); weekStart.setDate(now.getDate() - 7); weekStart.setHours(0,0,0,0);
-
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
-
-    const enc = encodeURIComponent;
 
     const load = async () => {
       setLoading(true);
       try {
-        const [sToday, sWeek, sMonth, eToday, credStats, lsRes] = await Promise.all([
-          fetch(`${API_URL}/sales/range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/sales/range?startDate=${enc(weekStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/sales/range?startDate=${enc(monthStart.toISOString())}&endDate=${enc(monthEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/expenses/by-date-range?startDate=${enc(todayStart.toISOString())}&endDate=${enc(todayEnd.toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/credits/stats`, { headers: h }).then(r => r.ok ? r.json() : { totalOutstanding: 0 }),
-          fetch(`${API_URL}/products/low-stock`, { headers: h }).then(r => r.ok ? r.json() : []),
-        ]);
+        // Use new dashboard endpoint that automatically returns correct data based on user type
+        const dashData = await fetch(`${API_URL}/dashboard`, { headers: h }).then(r => r.ok ? r.json() : null);
+        
+        console.log('Dashboard data:', dashData);
+        console.log('User account type:', user.accountType);
+        
+        if (dashData) {
+          setToday({
+            revenue: dashData.today.sales,
+            profit: dashData.today.profit,
+            expenses: 0, // Staff don't see expenses
+            transactions: dashData.today.transactions,
+            cashSales: dashData.today.cashSales || 0,
+            creditSales: dashData.today.creditSales || 0,
+          });
+          setWeekRev(dashData.week.sales);
+          setMonthRev(dashData.month.sales);
+        }
 
-        const active = (arr: any[]) => arr.filter((s: any) => s.status !== 'voided');
-        const sumAmt  = (arr: any[]) => arr.reduce((s: number, x: any) => s + Number(x.totalAmount), 0);
-        const sumProfit = (arr: any[]) => arr.reduce((s: number, x: any) =>
-          s + (Number(x.unitPrice) - Number(x.product?.buyingPrice ?? 0)) * Number(x.quantity), 0);
-
-        // TODO: Re-enable staff filtering once createdByStaffId is working
-        const todayActive = active(sToday);
-        setToday({
-          revenue:      sumAmt(todayActive),
-          profit:       sumProfit(todayActive),
-          expenses:     eToday.reduce((s: number, e: any) => s + Number(e.amount), 0),
-          transactions: todayActive.length,
-          cashSales:    todayActive.filter((s: any) => s.paymentType === 'cash').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
-          creditSales:  todayActive.filter((s: any) => s.paymentType === 'credit').reduce((s: number, x: any) => s + Number(x.totalAmount), 0),
-        });
-        setWeekRev(sumAmt(active(sWeek)));
-        setMonthRev(sumAmt(active(sMonth)));
-        setOutstanding(Number(credStats.totalOutstanding ?? 0));
-        setLowStock(Array.isArray(lsRes) ? lsRes.slice(0, 5) : []);
-      } catch {/* silent */}
+        // Only load additional data for owners
+        if (isOwner(user)) {
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          
+          const [credStats, lsRes, eToday] = await Promise.all([
+            fetch(`${API_URL}/credits/stats`, { headers: h }).then(r => r.ok ? r.json() : { totalOutstanding: 0 }),
+            fetch(`${API_URL}/products/low-stock`, { headers: h }).then(r => r.ok ? r.json() : []),
+            fetch(`${API_URL}/expenses/by-date-range?startDate=${encodeURIComponent(todayStart.toISOString())}&endDate=${encodeURIComponent(new Date().toISOString())}`, { headers: h }).then(r => r.ok ? r.json() : []),
+          ]);
+          
+          setOutstanding(Number(credStats.totalOutstanding ?? 0));
+          setLowStock(Array.isArray(lsRes) ? lsRes.slice(0, 5) : []);
+          
+          // Update today's expenses
+          const totalExpenses = eToday.reduce((s: number, e: any) => s + Number(e.amount), 0);
+          setToday(prev => prev ? { ...prev, expenses: totalExpenses } : null);
+        }
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+      }
       finally { setLoading(false); }
     };
     load();
@@ -147,8 +147,8 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-500">Loading dashboard…</div>
         ) : (
           <>
-            {/* Financial Overview — only visible if canViewDashboard */}
-            {canSeeOverview ? (
+            {/* Financial Overview — only visible to owners */}
+            {isOwner(user) ? (
               <>
                 {/* Today KPIs */}
                 <section className="grid gap-4 grid-cols-2 xl:grid-cols-4">

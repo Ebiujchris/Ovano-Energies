@@ -26,6 +26,7 @@ interface SaleItem {
   status?: string;
   createdAt: string;
   createdByStaffId?: string;
+  createdByStaffName?: string;
 }
 interface CartItem {
   key: string;
@@ -61,18 +62,20 @@ export default function SalesPage() {
   const [voidingId, setVoidingId] = useState<string | null>(null);
   const [voidReason, setVoidReason] = useState('');
 
-  const { data: products = [], loading: prodLoading } = useFetch<ProductItem[]>(
-    () => fetch(`${API_URL}/products`, { headers: authHeader() }).then((r) => r.json()),
+  const { data: rawProducts = [], loading: prodLoading } = useFetch<ProductItem[]>(
+    () => fetch(`${API_URL}/products`, { headers: authHeader() }).then(r => r.json()),
     [user?.id],
   );
+  const products = Array.isArray(rawProducts) ? rawProducts : [];
 
-  const { data: sales = [], loading: salesLoading, error, reload } = useFetch<SaleItem[]>(
-    () => fetch(`${API_URL}/sales`, { headers: authHeader() }).then((r) => {
+  const { data: rawSales = [], loading: salesLoading, error, reload } = useFetch<SaleItem[]>(
+    () => fetch(`${API_URL}/sales`, { headers: authHeader() }).then(r => {
       if (!r.ok) throw new Error('Failed to load sales');
       return r.json();
     }),
     [user?.id],
   );
+  const sales = Array.isArray(rawSales) ? rawSales : [];
 
   // Derive categories from products
   const categories = useMemo(() => {
@@ -439,7 +442,11 @@ export default function SalesPage() {
                               {isVoided && <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-500">voided</span>}
                             </div>
                             <p className="mt-0.5 text-xs text-slate-500">{sale.quantity} units · {sale.customerName ?? 'Walk-in customer'}</p>
-                            {sale.createdByStaffId && <p className="text-xs text-slate-400">By staff: {sale.createdByStaffId.slice(0, 8)}</p>}
+                            {(sale.createdByStaffName || sale.createdByStaffId) && (
+                              <p className="text-xs text-slate-400">
+                                By: {sale.createdByStaffName || `Staff-${sale.createdByStaffId?.slice(0, 8)}`}
+                              </p>
+                            )}
                             <p className="text-xs text-slate-400">{new Date(sale.createdAt).toLocaleString()}</p>
                           </div>
                           <div className="shrink-0 text-right">
