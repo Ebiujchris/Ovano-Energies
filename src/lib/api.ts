@@ -123,7 +123,7 @@ class ApiService {
       try {
         response = await fetch(`${API_URL}${endpoint}`, {
           ...fetchOptions,
-          headers: { ...this.getHeaders(isAuth), ...(fetchOptions.headers as Record<string, string>) },
+          headers: { ...this.getHeaders(), ...(fetchOptions.headers as Record<string, string>) },
         });
       } catch {
         // Network failure — retry with backoff
