@@ -106,7 +106,6 @@ class ApiService {
     options: RequestInit & { cacheable?: boolean; retries?: number } = {},
   ): Promise<T> {
     const { cacheable = false, retries = 1, ...fetchOptions } = options;
-    const isAuth = endpoint.startsWith('/auth/');
     const cacheKey = `${endpoint}|${JSON.stringify(fetchOptions.body ?? '')}`;
 
     // Return cached GET responses
