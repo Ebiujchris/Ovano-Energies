@@ -81,16 +81,22 @@ class ApiService {
 
   private getHeaders(isAuth = false): Record<string, string> {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (this.token && !isAuth) h.Authorization = `Bearer ${this.token}`;
+    if (this.token) h.Authorization = `Bearer ${this.token}`;
     return h;
   }
 
-  private handleUnauthorized() {
+  private handleUnauthorized(endpoint: string) {
+    // Only log out on explicit auth-sensitive operations, not data fetches
+    // This prevents being logged out just because a data request gets 401
+    const isDataFetch = ['/products', '/sales', '/credits', '/expenses', '/dashboard'].some(
+      path => endpoint.startsWith(path)
+    );
+    if (isDataFetch) return;
+    
     this.token = null;
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('authToken');
       window.localStorage.removeItem('userData');
-      // Dispatch event so AuthContext can react
       window.dispatchEvent(new CustomEvent('auth:expired'));
     }
   }
@@ -129,7 +135,7 @@ class ApiService {
       }
 
       if (response.status === 401) {
-        this.handleUnauthorized();
+        this.handleUnauthorized(endpoint);
         throw new ApiError('Session expired. Please sign in again.', 401);
       }
 
@@ -203,8 +209,8 @@ export function normalizePhone(phone: string): string {
 }
 
 export function authHeader(): Record<string, string> {
-  const token = localStorage.getItem('authToken') || '';
-  return { Authorization: `Bearer ${token}` };
+  const token = localStorage.getItem('authToken');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PageShell from '../components/PageShell';
 import { useAuth } from '../context/AuthContext';
-import { API_URL } from '../lib/api';
+import { API_URL, authHeader } from '../lib/api';
 import { printHtml } from '../lib/print';
 
 const fmt = (n: number) =>
@@ -240,9 +240,7 @@ export default function ReportsPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
 
-  const authHeader = useMemo(() => ({
-    Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
-  }), [user?.id]);
+  const auth = useMemo(() => authHeader(), [user?.id]);
 
   // Scroll today into view when calendar opens
   useEffect(() => {
@@ -279,9 +277,10 @@ export default function ReportsPage() {
     const load = async () => {
       try {
         setLoading(true); setError(null);
+        const headers = authHeader();
         const [sRes, eRes] = await Promise.all([
-          fetch(`${API_URL}/sales/range?startDate=${encodeURIComponent(range.start.toISOString())}&endDate=${encodeURIComponent(range.end.toISOString())}`, { headers: authHeader }),
-          fetch(`${API_URL}/expenses/by-date-range?startDate=${encodeURIComponent(range.start.toISOString())}&endDate=${encodeURIComponent(range.end.toISOString())}`, { headers: authHeader }),
+          fetch(`${API_URL}/sales/range?startDate=${encodeURIComponent(range.start.toISOString())}&endDate=${encodeURIComponent(range.end.toISOString())}`, { headers }),
+          fetch(`${API_URL}/expenses/by-date-range?startDate=${encodeURIComponent(range.start.toISOString())}&endDate=${encodeURIComponent(range.end.toISOString())}`, { headers }),
         ]);
         setSales(sRes.ok ? await sRes.json() : []);
         setExpenses(eRes.ok ? await eRes.json() : []);

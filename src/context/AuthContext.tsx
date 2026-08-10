@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Restore immediately from localStorage for fast load
+      // Restore immediately from localStorage for fast load, but keep loading true while refreshing.
       try {
         const parsed = JSON.parse(storedUser);
         api.setToken(token);
@@ -55,21 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setLoading(false);
-
-      // Silently refresh in background to pick up any permission changes
+      // Silently refresh in background to pick up any permission changes.
+      // If refresh fails, keep the stored user — don't log out.
       try {
         const fresh = await api.getCurrentUser();
         setUser(fresh);
         localStorage.setItem(USER_KEY, JSON.stringify(fresh));
-      } catch (err: any) {
-        // Only clear session on explicit 401
-        if (err?.status === 401) {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(USER_KEY);
-          api.setToken(null);
-          setUser(null);
-        }
+      } catch {
+        // Background refresh failed — keep existing session, don't log out.
+        // User will be logged out only on explicit logout or expired token event.
+      } finally {
+        setLoading(false);
       }
     };
 

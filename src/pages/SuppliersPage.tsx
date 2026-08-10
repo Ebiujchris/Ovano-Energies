@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import PageShell from '../components/PageShell';
 import { useAuth } from '../context/AuthContext';
-import { API_URL } from '../lib/api';
+import { API_URL, authHeader } from '../lib/api';
 import { useToast } from '../components/Toast';
 
 interface Supplier {
@@ -49,15 +49,15 @@ export default function SuppliersPage() {
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' });
   const [orderForm, setOrderForm] = useState({ supplierId: '', productId: '', quantity: '', unitCost: '', notes: '' });
 
-  const authHeader = useMemo(() => ({ Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` }), [user?.id]);
+  const auth = useMemo(() => authHeader(), [user?.id]);
 
   const load = async () => {
     try {
       setLoading(true);
       const [sRes, pRes, oRes] = await Promise.all([
-        fetch(`${API_URL}/suppliers`, { headers: authHeader }),
-        fetch(`${API_URL}/products`, { headers: authHeader }),
-        fetch(`${API_URL}/purchase-orders`, { headers: authHeader }),
+        fetch(`${API_URL}/suppliers`, { headers: auth }),
+        fetch(`${API_URL}/products`, { headers: auth }),
+        fetch(`${API_URL}/purchase-orders`, { headers: auth }),
       ]);
       setSuppliers(sRes.ok ? await sRes.json() : []);
       setProducts(pRes.ok ? await pRes.json() : []);
@@ -76,7 +76,7 @@ export default function SuppliersPage() {
     try {
       const res = await fetch(`${API_URL}/suppliers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify(supplierForm),
       });
       const payload = await res.json().catch(() => ({}));
@@ -92,7 +92,7 @@ export default function SuppliersPage() {
     try {
       const res = await fetch(`${API_URL}/purchase-orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ ...orderForm, quantity: Number(orderForm.quantity), unitCost: Number(orderForm.unitCost) }),
       });
       const payload = await res.json().catch(() => ({}));
@@ -105,7 +105,7 @@ export default function SuppliersPage() {
 
   const handleReceive = async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/purchase-orders/${id}/receive`, { method: 'POST', headers: authHeader });
+      const res = await fetch(`${API_URL}/purchase-orders/${id}/receive`, { method: 'POST', headers: auth });
       if (!res.ok) throw new Error('Failed to receive order');
       setMessage('Order received — stock updated');
       await load();
@@ -114,7 +114,7 @@ export default function SuppliersPage() {
 
   const handleDeleteSupplier = async (id: string) => {
     if (!confirm('Remove this supplier?')) return;
-    await fetch(`${API_URL}/suppliers/${id}`, { method: 'DELETE', headers: authHeader });
+    await fetch(`${API_URL}/suppliers/${id}`, { method: 'DELETE', headers: auth });
     await load();
   };
 

@@ -29,7 +29,10 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user?.shopId) return;
     fetch(`${API_URL}/users/me`, { headers: authHeader() })
-      .then(r => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load profile');
+        return r.json();
+      })
       .then(data => {
         setProfile({ name: data.name ?? '', email: data.email ?? '', phone: data.phone ?? '' });
         if (data.shop) setShop(data.shop);
