@@ -57,8 +57,9 @@ export default function SalesPage() {
 
   const [filter, setFilter] = useState<'all' | 'cash' | 'credit'>('all');
   const [search, setSearch] = useState('');
+  const [staffFilter, setStaffFilter] = useState('all');
   const [txPage, setTxPage] = useState(1);
-  const TX_PAGE_SIZE = 10;
+  const TX_PAGE_SIZE = 6;
   const [voidingId, setVoidingId] = useState<string | null>(null);
   const [voidReason, setVoidReason] = useState('');
 
@@ -199,10 +200,20 @@ export default function SalesPage() {
     // }
     
     const matchFilter = filter === 'all' || s.paymentType === filter;
+    const matchStaff = staffFilter === 'all' || s.createdByStaffName === staffFilter || s.createdByStaffId === staffFilter;
     const q = search.toLowerCase();
     const matchSearch = !q || [s.product?.name, s.customerName, s.paymentType].some((v) => v?.toLowerCase().includes(q));
-    return matchFilter && matchSearch;
-  }), [sales, filter, search, user]);
+    return matchFilter && matchStaff && matchSearch;
+  }), [sales, filter, staffFilter, search, user]);
+
+  // Get unique staff names from sales for filter dropdown
+  const staffNames = useMemo(() => {
+    const names = new Set<string>();
+    sales.forEach(s => {
+      if (s.createdByStaffName) names.add(s.createdByStaffName);
+    });
+    return Array.from(names).sort();
+  }, [sales]);
 
   const handleVoid = async (id: string) => {
     if (!voidReason.trim()) { toast.error('Enter a reason for voiding'); return; }
@@ -401,7 +412,7 @@ export default function SalesPage() {
 
           <div className="mt-4 space-y-3">
             <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none" placeholder="Search buyer or product..." value={search} onChange={(e) => { setSearch(e.target.value); setTxPage(1); }} />
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {(['all', 'cash', 'credit'] as const).map((f) => (
                 <button key={f} type="button" onClick={() => { setFilter(f); setTxPage(1); }}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${filter === f ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
@@ -411,6 +422,23 @@ export default function SalesPage() {
                 </button>
               ))}
             </div>
+            {staffNames.length > 0 && (
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Sale by</label>
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
+                  value={staffFilter}
+                  onChange={(e) => { setStaffFilter(e.target.value); setTxPage(1); }}
+                >
+                  <option value="all">All staff ({sales.length})</option>
+                  {staffNames.map(name => (
+                    <option key={name} value={name}>
+                      {name} ({sales.filter(s => s.createdByStaffName === name).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {loading ? <div className="mt-4"><SkeletonList rows={5} /></div>
