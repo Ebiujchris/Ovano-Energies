@@ -196,6 +196,8 @@ export default function ReceiptsPage() {
   const [search, setSearch] = useState('');
   const [payFilter, setPayFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 6;
 
   const { data: sales = [], loading, error, reload } = useFetch<SaleItem[]>(
     () => fetch(`${API_URL}/sales`, { headers: authHeader() }).then((r) => {
@@ -217,6 +219,9 @@ export default function ReceiptsPage() {
     return matchPay && matchSearch && matchDate;
   }), [groups, payFilter, search, dateFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visibleReceipts = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <PageShell title="Receipts" description="All transaction receipts. Click Print to get a copy.">
       <div className="space-y-5">
@@ -227,23 +232,23 @@ export default function ReceiptsPage() {
             className="w-64 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
             placeholder="Search customer or product..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
           <input
             type="date"
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
           />
           {dateFilter && (
-            <button type="button" onClick={() => setDateFilter('')}
+            <button type="button" onClick={() => { setDateFilter(''); setPage(1); }}
               className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200">
               Clear date
             </button>
           )}
           <div className="flex gap-2">
             {(['all', 'cash', 'credit', 'mobile_money'] as const).map((f) => (
-              <button key={f} type="button" onClick={() => setPayFilter(f)}
+              <button key={f} type="button" onClick={() => { setPayFilter(f); setPage(1); }}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${payFilter === f ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                 {f === 'all' ? `All (${groups.length})` : f.replace('_', ' ')}
               </button>
@@ -263,8 +268,9 @@ export default function ReceiptsPage() {
               {sales.length === 0 ? 'No sales recorded yet.' : 'No receipts match your filters.'}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((group) => {
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleReceipts.map((group) => {
                 const receiptNo = group.key.slice(0, 8).toUpperCase();
                 const dateStr = new Date(group.date).toLocaleString('en-UG', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -330,6 +336,35 @@ export default function ReceiptsPage() {
                 );
               })}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-xs text-slate-400">
+                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition">←</button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                    .reduce<(number | '...')[]>((acc, n, i, arr) => {
+                      if (i > 0 && n - (arr[i - 1] as number) > 1) acc.push('...');
+                      acc.push(n); return acc;
+                    }, [])
+                    .map((n, i) => n === '...'
+                      ? <span key={`e-${i}`} className="px-1 text-xs text-slate-400">…</span>
+                      : <button key={n} type="button" onClick={() => setPage(n as number)}
+                          className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${page === n ? 'bg-brand-500 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                          {n}
+                        </button>
+                    )}
+                  <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition">→</button>
+                </div>
+              </div>
+            )}
+          </>
           )}
       </div>
     </PageShell>
