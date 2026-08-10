@@ -240,8 +240,6 @@ export default function ReportsPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
 
-  const auth = useMemo(() => authHeader(), [user?.id]);
-
   // Scroll today into view when calendar opens
   useEffect(() => {
     if (viewMode !== 'daily') return;
