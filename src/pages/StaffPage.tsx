@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import PageShell from '../components/PageShell';
 import { useAuth } from '../context/AuthContext';
-import { API_URL } from '../lib/api';
+import { API_URL, authHeader } from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 interface StaffMember {
@@ -20,11 +20,12 @@ interface StaffMember {
   hireDate?: string;
 }
 
-const ROLES = ['cashier', 'manager', 'stock_keeper'];
+const ROLES = ['cashier', 'sales', 'manager', 'stock_keeper'];
 
 // Permission presets per role
 const ROLE_PRESETS: Record<string, { canAccessInventory: boolean; canApproveCredits: boolean; canViewReports: boolean; canManageExpenses: boolean; canViewDashboard: boolean }> = {
   cashier:      { canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false, canViewDashboard: true  },
+  sales:        { canAccessInventory: false, canApproveCredits: false, canViewReports: false, canManageExpenses: false, canViewDashboard: true  },
   stock_keeper: { canAccessInventory: true,  canApproveCredits: false, canViewReports: false, canManageExpenses: false, canViewDashboard: true  },
   manager:      { canAccessInventory: true,  canApproveCredits: true,  canViewReports: true,  canManageExpenses: true,  canViewDashboard: true  },
 };
@@ -62,12 +63,10 @@ export default function StaffPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const authHeader = { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` };
-
   const load = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/staff`, { headers: authHeader });
+      const res = await fetch(`${API_URL}/staff`, { headers: authHeader() });
       if (!res.ok) throw new Error('Failed to load staff');
       const data = await res.json();
       setStaff(Array.isArray(data) ? data : []);
@@ -94,13 +93,15 @@ export default function StaffPage() {
     try {
       const res = await fetch(`${API_URL}/staff`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({
           name: form.name,
           phone: form.phone,
           role: form.role,
           password: form.password,
           salary: form.salary ? Number(form.salary) : undefined,
+          canViewDashboard: form.canViewDashboard,
+          canMakeSales: true,
           canAccessInventory: form.canAccessInventory,
           canApproveCredits: form.canApproveCredits,
           canViewReports: form.canViewReports,
@@ -108,7 +109,13 @@ export default function StaffPage() {
         }),
       });
       const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.message || 'Failed to add staff');
+      if (!res.ok) {
+        console.error('Staff creation error:', payload);
+        const errorMsg = Array.isArray(payload.message) 
+          ? payload.message.join(', ') 
+          : payload.message || 'Failed to add staff';
+        throw new Error(errorMsg);
+      }
       setMessage(`Added ${payload.name}`);
       setForm(BLANK_FORM);
       await load();
@@ -135,7 +142,7 @@ export default function StaffPage() {
 
       const res = await fetch(`${API_URL}/staff/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify(body),
       });
       const payload = await res.json().catch(() => ({}));
@@ -156,7 +163,7 @@ export default function StaffPage() {
 
   const confirmRemove = async () => {
     if (!deleteTarget) return;
-    await fetch(`${API_URL}/staff/${deleteTarget}`, { method: 'DELETE', headers: authHeader });
+    await fetch(`${API_URL}/staff/${deleteTarget}`, { method: 'DELETE', headers: authHeader() });
     setDeleteTarget(null);
     await load();
   };
